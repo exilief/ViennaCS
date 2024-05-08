@@ -61,12 +61,12 @@ public:
     std::array<rayTriple<T>, 3> orthoBasis;
     if (usePrimaryDirection) {
       orthoBasis = rayInternal::getOrthonormalBasis(primaryDirection);
-      /*psLogger::getInstance()
+      csLogger::getInstance()
           .addInfo("Using primary direction: " +
                    std::to_string(primaryDirection[0]) + " " +
                    std::to_string(primaryDirection[1]) + " " +
                    std::to_string(primaryDirection[2]))
-          .print();*/
+          .print();
     }
 
     if (usePointSource) {

@@ -3,8 +3,7 @@
 #include "csBVH.hpp"
 #include "csTracePath.hpp"
 #include "csUtil.hpp"
-
-//#include "psLogger.hpp"
+#include "csLogger.hpp"
 
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
@@ -339,15 +338,15 @@ public:
     std::string line;
 
     if (!file.is_open()) {
-      /*psLogger::getInstance()
+      csLogger::getInstance()
           .addWarning("Could not open file " + fileName)
-          .print();*/
+          .print();
       return;
     }
 
     std::getline(file, line);
     if (std::stoi(line) != numberOfCells) {
-      //psLogger::getInstance().addWarning("Incompatible cell set data.").print();
+      csLogger::getInstance().addWarning("Incompatible cell set data.").print();
       return;
     }
 
@@ -554,8 +553,8 @@ public:
     if (!cellNeighbors.empty() && !forceRebuild)
       return;
 
-    //psUtils::Timer timer;
-    //timer.start();
+    csUtil::Timer timer;
+    timer.start();
     const auto &cells = cellGrid->template getElements<(1 << D)>();
     const auto &nodes = cellGrid->getNodes();
     unsigned const numNodes = nodes.size();
@@ -629,11 +628,11 @@ public:
         }
       }
     }
-    /*timer.finish();
-    psLogger::getInstance()
+    timer.finish();
+    csLogger::getInstance()
         .addTiming("Building cell set neighborhood structure took",
                    timer.currentDuration * 1e-9)
-        .print();*/
+        .print();
   }
 
   const std::array<int, 2 * D> &getNeighbors(unsigned long cellIdx) const {
@@ -717,8 +716,8 @@ private:
   }
 
   void buildBVH() {
-    //psUtils::Timer timer;
-    //timer.start();
+    csUtil::Timer timer;
+    timer.start();
     auto &elems = cellGrid->template getElements<(1 << D)>();
     auto &nodes = cellGrid->getNodes();
     BVH->clearCellIds();
@@ -728,15 +727,15 @@ private:
         auto &node = nodes[elems[elemIdx][n]];
         auto cell = BVH->getCellIds(node);
         if (cell == nullptr) {
-          //psLogger::getInstance().addError("BVH building error.").print();
+          csLogger::getInstance().addError("BVH building error.").print();
         }
         cell->insert(elemIdx);
       }
     }
-    /*timer.finish();
-    psLogger::getInstance()
+    timer.finish();
+    csLogger::getInstance()
         .addTiming("Building cell set BVH took", timer.currentDuration * 1e-9)
-        .print();*/
+        .print();
   }
 
   void calculateMinMaxIndex(
