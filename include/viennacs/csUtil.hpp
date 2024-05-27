@@ -1,9 +1,9 @@
 #pragma once
 
-#include <chrono>
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <omp.h>

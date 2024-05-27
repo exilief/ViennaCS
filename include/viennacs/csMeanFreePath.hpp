@@ -26,16 +26,13 @@ public:
     levelSets = passedLevelSets;
   }
 
-  void setCellSet(cellSetType passedCellSet) {
-    cellSet = passedCellSet;
-  }
+  void setCellSet(cellSetType passedCellSet) { cellSet = passedCellSet; }
 
   void setBulkLambda(const NumericType passedBulkLambda) {
     bulkLambda = passedBulkLambda;
   }
 
-  template <class Material>
-  void setMaterial(const Material passedMaterial) {
+  template <class Material> void setMaterial(const Material passedMaterial) {
     material = static_cast<int>(passedMaterial);
   }
 
@@ -66,8 +63,7 @@ private:
     auto traceGeometry = rayGeometry<NumericType, D>();
     {
       auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-      lsToDiskMesh<NumericType, D>(levelSets->back(), mesh)
-          .apply();
+      lsToDiskMesh<NumericType, D>(levelSets->back(), mesh).apply();
       auto &points = mesh->getNodes();
       auto normals = mesh->getCellData().getVectorData("Normals");
       gridDelta = levelSets->back()->getGrid().getGridDelta();

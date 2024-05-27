@@ -1,9 +1,9 @@
 #pragma once
 
 #include "csBVH.hpp"
+#include "csLogger.hpp"
 #include "csTracePath.hpp"
 #include "csUtil.hpp"
-#include "csLogger.hpp"
 
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>

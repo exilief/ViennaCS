@@ -43,8 +43,7 @@ public:
       if (static_cast<int>(materials->at(i)) != bulkMaterial) {
         auto neighbors = cellSet->getNeighbors(i);
         for (auto n : neighbors) {
-          if (n >= 0 &&
-              static_cast<int>(materials->at(n)) == bulkMaterial) {
+          if (n >= 0 && static_cast<int>(materials->at(n)) == bulkMaterial) {
             cellType->at(i) = 0.;
             break;
           }

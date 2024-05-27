@@ -8,26 +8,27 @@ int main() {
   constexpr int D = 2;
 
   // two plane geometries
-  lsBoundaryConditionEnum<D> boundaryCondition[D] = {
+  lsBoundaryConditionEnum<D> boundaryConds[D] = {
       lsBoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY,
       lsBoundaryConditionEnum<D>::INFINITE_BOUNDARY};
   T bounds[2 * D] = {-1., 1., -1., 1.};
+  T gridDelta = 0.2;
 
-  T origin[D] = {0.};
-  T normal[D] = {0.};
+  T origin[D] = {};
+  T normal[D] = {};
   normal[D - 1] = 1.;
 
-  auto plane1 = lsSmartPointer<lsDomain<T, D>>::New(
-      bounds, boundaryCondition, 0.2);
-  lsMakeGeometry<T, D>(
-      plane1, lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+  auto plane1 =
+      lsSmartPointer<lsDomain<T, D>>::New(bounds, boundaryConds, gridDelta);
+  lsMakeGeometry<T, D>(plane1,
+                       lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
       .apply();
 
   origin[D - 1] = 1.;
-  auto plane2 = lsSmartPointer<lsDomain<T, D>>::New(
-      bounds, boundaryCondition, 0.2);
-  lsMakeGeometry<T, D>(
-      plane2, lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+  auto plane2 =
+      lsSmartPointer<lsDomain<T, D>>::New(bounds, boundaryConds, gridDelta);
+  lsMakeGeometry<T, D>(plane2,
+                       lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
       .apply();
 
   auto levelSets =
@@ -38,10 +39,11 @@ int main() {
   csDenseCellSet<T, D> cellSet;
   int coverMaterial = 0;
   bool isAboveSurface = true;
+  T depth = 3.;
   cellSet.setCellSetPosition(isAboveSurface);
   cellSet.setCoverMaterial(coverMaterial);
-  cellSet.fromLevelSets(levelSets, nullptr, 3.);
+  cellSet.fromLevelSets(levelSets, nullptr, depth);
 
-  CSTEST_ASSERT(cellSet.getDepth() == 3.);
+  CSTEST_ASSERT(cellSet.getDepth() == depth);
   CSTEST_ASSERT(cellSet.getNumberOfCells() == 160);
 }
