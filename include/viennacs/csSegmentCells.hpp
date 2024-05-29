@@ -15,12 +15,10 @@ public:
   SegmentCells(const SmartPointer<DenseCellSet<NumericType, D>> &passedCellSet)
       : cellSet(passedCellSet) {}
 
-  template <class Material>
   SegmentCells(const SmartPointer<DenseCellSet<NumericType, D>> &passedCellSet,
-               const std::string cellTypeString,
-               const Material passedBulkMaterial)
+               const std::string cellTypeString, const int passedBulkMaterial)
       : cellSet(passedCellSet), cellTypeString(cellTypeString),
-        bulkMaterial(static_cast<int>(passedBulkMaterial)) {}
+        bulkMaterial(passedBulkMaterial) {}
 
   void
   setCellSet(const SmartPointer<DenseCellSet<NumericType, D>> &passedCellSet) {
@@ -31,9 +29,8 @@ public:
     cellTypeString = passedCellTypeString;
   }
 
-  template <class Material>
-  void setBulkMaterial(const Material passedBulkMaterial) {
-    bulkMaterial = static_cast<int>(passedBulkMaterial);
+  void setBulkMaterial(const int passedBulkMaterial) {
+    bulkMaterial = passedBulkMaterial;
   }
 
   void apply() {

@@ -1,26 +1,29 @@
 #pragma once
 
 #include "csDenseCellSet.hpp"
-#include "csLogger.hpp"
 
 #include <lsDomain.hpp>
 #include <lsToDiskMesh.hpp>
 #include <rayGeometry.hpp>
 
-template <class NumericType, int D> class csMeanFreePath {
+namespace viennacs {
+
+using namespace viennacore;
+
+template <class NumericType, int D> class MeanFreePath {
 
 private:
   using levelSetsType =
-      lsSmartPointer<std::vector<lsSmartPointer<lsDomain<NumericType, D>>>>;
-  using cellSetType = lsSmartPointer<csDenseCellSet<NumericType, D>>;
+      SmartPointer<std::vector<SmartPointer<viennals::Domain<NumericType, D>>>>;
+  using cellSetType = SmartPointer<DenseCellSet<NumericType, D>>;
 
 public:
-  csMeanFreePath() : traceDevice(rtcNewDevice("hugepages=1")) {
+  MeanFreePath() : traceDevice(rtcNewDevice("hugepages=1")) {
     static_assert(D == 2 &&
                   "Mean free path calculation only implemented for 2D");
   }
 
-  ~csMeanFreePath() { rtcReleaseDevice(traceDevice); }
+  ~MeanFreePath() { rtcReleaseDevice(traceDevice); }
 
   void setLevelSets(levelSetsType passedLevelSets) {
     levelSets = passedLevelSets;
@@ -43,7 +46,7 @@ public:
   NumericType getMaxLambda() const { return maxLambda; }
 
   void apply() {
-    csLogger::getInstance().addInfo("Calculating mean free path ...").print();
+    Logger::getInstance().addInfo("Calculating mean free path ...").print();
     cellSet->addScalarData("MeanFreePath", 0.);
     runKernel();
   }
@@ -62,7 +65,7 @@ private:
 
     auto traceGeometry = rayGeometry<NumericType, D>();
     {
-      auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+      auto mesh = SmartPointer<lsMesh<NumericType>>::New();
       lsToDiskMesh<NumericType, D>(levelSets->back(), mesh).apply();
       auto &points = mesh->getNodes();
       auto normals = mesh->getCellData().getVectorData("Normals");
@@ -168,8 +171,8 @@ private:
     rtcReleaseScene(rtcScene);
   }
 
-  std::array<NumericType, 3> getDirection(const unsigned int idx) {
-    std::array<NumericType, 3> direction;
+  Vec3D<NumericType> getDirection(const unsigned int idx) {
+    Vec3D<NumericType> direction;
     NumericType theta = idx * 2. * M_PI / numRaysPerCell;
     direction[0] = std::cos(theta);
     direction[1] = std::sin(theta);
@@ -188,3 +191,5 @@ private:
   long numRaysPerCell = 100;
   int material = -1;
 };
+
+} // namespace viennacs

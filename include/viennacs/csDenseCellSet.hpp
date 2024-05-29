@@ -258,9 +258,8 @@ public:
     cellSetAboveSurface = passedCellSetPosition;
   }
 
-  template <class Material>
-  void setCoverMaterial(const Material passedCoverMaterial) {
-    coverMaterial = static_cast<int>(passedCoverMaterial);
+  void setCoverMaterial(const int passedCoverMaterial) {
+    coverMaterial = passedCoverMaterial;
   }
 
   bool getCellSetPosition() const { return cellSetAboveSurface; }
