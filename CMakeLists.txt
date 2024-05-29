@@ -17,13 +17,9 @@ option(VIENNACS_BUILD_TESTS "Build tests" OFF)
 # Global CMake Configuration
 # --------------------------------------------------------------------------------------------------------
 
-
-
 # --------------------------------------------------------------------------------------------------------
 # Configuration
 # --------------------------------------------------------------------------------------------------------
-
-
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Library
@@ -100,7 +96,8 @@ CPMFindPackage(
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaLS"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
-target_link_libraries(${PROJECT_NAME} INTERFACE ViennaTools::ViennaRay ViennaTools::ViennaLS ViennaTools::ViennaCore)
+target_link_libraries(${PROJECT_NAME} INTERFACE ViennaTools::ViennaRay ViennaTools::ViennaLS
+                                                ViennaTools::ViennaCore)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Examples
