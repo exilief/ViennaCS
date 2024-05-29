@@ -2,25 +2,28 @@
 
 #include "csDenseCellSet.hpp"
 
-template <class NumericType, int D> class csSegmentCells {
-  lsSmartPointer<csDenseCellSet<NumericType, D>> cellSet = nullptr;
+namespace viennacs {
+
+using namespace viennacore;
+
+template <class NumericType, int D> class SegmentCells {
+  SmartPointer<DenseCellSet<NumericType, D>> cellSet = nullptr;
   std::string cellTypeString = "CellType";
   int bulkMaterial = -1;
 
 public:
-  csSegmentCells(
-      const lsSmartPointer<csDenseCellSet<NumericType, D>> &passedCellSet)
+  SegmentCells(const SmartPointer<DenseCellSet<NumericType, D>> &passedCellSet)
       : cellSet(passedCellSet) {}
 
   template <class Material>
-  csSegmentCells(
-      const lsSmartPointer<csDenseCellSet<NumericType, D>> &passedCellSet,
-      const std::string cellTypeString, const Material passedBulkMaterial)
+  SegmentCells(const SmartPointer<DenseCellSet<NumericType, D>> &passedCellSet,
+               const std::string cellTypeString,
+               const Material passedBulkMaterial)
       : cellSet(passedCellSet), cellTypeString(cellTypeString),
         bulkMaterial(static_cast<int>(passedBulkMaterial)) {}
 
-  void setCellSet(
-      const lsSmartPointer<csDenseCellSet<NumericType, D>> &passedCellSet) {
+  void
+  setCellSet(const SmartPointer<DenseCellSet<NumericType, D>> &passedCellSet) {
     cellSet = passedCellSet;
   }
 
@@ -54,3 +57,5 @@ public:
     }
   }
 };
+
+} // namespace viennacs

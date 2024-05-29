@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCS
   LANGUAGES CXX
-  VERSION 1.0.0)
+  VERSION 0.0.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -83,18 +83,24 @@ CPMAddPackage(
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
 CPMFindPackage(
+  NAME ViennaCore
+  GIT_TAG main
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
+  EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
+
+CPMFindPackage(
   NAME ViennaRay
-  VERSION 2.1.0
+  GIT_TAG viennacore
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaRay"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
 CPMFindPackage(
   NAME ViennaLS
-  VERSION 3.1.0
+  GIT_TAG viennacore
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaLS"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
-target_link_libraries(${PROJECT_NAME} INTERFACE ViennaTools::ViennaRay ViennaTools::ViennaLS)
+target_link_libraries(${PROJECT_NAME} INTERFACE ViennaTools::ViennaRay ViennaTools::ViennaLS ViennaTools::ViennaCore)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Examples
@@ -127,4 +133,4 @@ packageProject(
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennacs
   INCLUDE_DESTINATION include/viennacs-${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
-  DEPENDENCIES "ViennaLS;ViennaRay")
+  DEPENDENCIES "ViennaCore;ViennaLS;ViennaRay")

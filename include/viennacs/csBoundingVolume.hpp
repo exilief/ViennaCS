@@ -1,15 +1,19 @@
 #pragma once
 
-#include "csUtil.hpp"
-#include <lsSmartPointer.hpp>
+#include <vcSmartPointer.hpp>
+#include <vcVectorUtil.hpp>
 
 #include <array>
 #include <set>
 
-template <class T, int D> class csBoundingVolume {
+namespace viennacs {
+
+using namespace viennacore;
+
+template <class T, int D> class BoundingVolume {
 private:
-  using BVPtrType = lsSmartPointer<csBoundingVolume<T, D>>;
-  using BoundsType = csPair<std::array<T, D>>;
+  using BVPtrType = SmartPointer<BoundingVolume<T, D>>;
+  using BoundsType = Vec2D<std::array<T, D>>;
   using CellIdsPtr = std::set<unsigned> *;
 
   static constexpr int numCells = 1 << D;
@@ -19,8 +23,8 @@ private:
   int layer = -1;
 
 public:
-  csBoundingVolume() {}
-  csBoundingVolume(const BoundsType &outerBound, int thisLayer)
+  BoundingVolume() {}
+  BoundingVolume(const BoundsType &outerBound, int thisLayer)
       : layer(thisLayer) {
 
     if constexpr (D == 3)
@@ -133,18 +137,18 @@ private:
     auto yExt = (outerBound[1][1] - outerBound[0][1]) / 2.;
 
     const auto BVH1 =
-        csPair<csPair<T>>{outerBound[0][0], outerBound[0][1],
-                          outerBound[0][0] + xExt, outerBound[0][1] + yExt};
+        Vec2D<Vec2D<T>>{outerBound[0][0], outerBound[0][1],
+                        outerBound[0][0] + xExt, outerBound[0][1] + yExt};
     const auto BVH2 =
-        csPair<csPair<T>>{outerBound[0][0] + xExt, outerBound[0][1],
-                          outerBound[0][0] + 2 * xExt, outerBound[0][1] + yExt};
-    const auto BVH3 = csPair<csPair<T>>{
+        Vec2D<Vec2D<T>>{outerBound[0][0] + xExt, outerBound[0][1],
+                        outerBound[0][0] + 2 * xExt, outerBound[0][1] + yExt};
+    const auto BVH3 = Vec2D<Vec2D<T>>{
         outerBound[0][0] + xExt,
         outerBound[0][1] + yExt,
         outerBound[0][0] + 2 * xExt,
         outerBound[0][1] + 2 * yExt,
     };
-    const auto BVH4 = csPair<csPair<T>>{
+    const auto BVH4 = Vec2D<Vec2D<T>>{
         outerBound[0][0],
         outerBound[0][1] + yExt,
         outerBound[0][0] + xExt,
@@ -152,7 +156,7 @@ private:
     };
 
     bounds =
-        std::array<csPair<std::array<T, D>>, numCells>{BVH1, BVH2, BVH3, BVH4};
+        std::array<Vec2D<std::array<T, D>>, numCells>{BVH1, BVH2, BVH3, BVH4};
   }
 
   void buildBounds3D(const BoundsType &outerBound) {
@@ -161,46 +165,48 @@ private:
     auto zExt = (outerBound[1][2] - outerBound[0][2]) / T(2);
 
     const auto BVH1 =
-        csPair<csTriple<T>>{outerBound[0][0],        outerBound[0][1],
-                            outerBound[0][2],        outerBound[0][0] + xExt,
-                            outerBound[0][1] + yExt, outerBound[0][2] + zExt};
-    const auto BVH2 = csPair<csTriple<T>>{
-        outerBound[0][0] + xExt, outerBound[0][1],
-        outerBound[0][2],        outerBound[0][0] + 2 * xExt,
-        outerBound[0][1] + yExt, outerBound[0][2] + zExt};
-    const auto BVH3 = csPair<csTriple<T>>{outerBound[0][0] + xExt,
-                                          outerBound[0][1] + yExt,
-                                          outerBound[0][2],
-                                          outerBound[0][0] + 2 * xExt,
-                                          outerBound[0][1] + 2 * yExt,
-                                          outerBound[0][2] + zExt};
-    const auto BVH4 = csPair<csTriple<T>>{outerBound[0][0],
-                                          outerBound[0][1] + yExt,
-                                          outerBound[0][2],
-                                          outerBound[0][0] + xExt,
-                                          outerBound[0][1] + 2 * yExt,
-                                          outerBound[0][2] + zExt};
+        Vec2D<Vec3D<T>>{outerBound[0][0],        outerBound[0][1],
+                        outerBound[0][2],        outerBound[0][0] + xExt,
+                        outerBound[0][1] + yExt, outerBound[0][2] + zExt};
+    const auto BVH2 =
+        Vec2D<Vec3D<T>>{outerBound[0][0] + xExt, outerBound[0][1],
+                        outerBound[0][2],        outerBound[0][0] + 2 * xExt,
+                        outerBound[0][1] + yExt, outerBound[0][2] + zExt};
+    const auto BVH3 = Vec2D<Vec3D<T>>{outerBound[0][0] + xExt,
+                                      outerBound[0][1] + yExt,
+                                      outerBound[0][2],
+                                      outerBound[0][0] + 2 * xExt,
+                                      outerBound[0][1] + 2 * yExt,
+                                      outerBound[0][2] + zExt};
+    const auto BVH4 = Vec2D<Vec3D<T>>{outerBound[0][0],
+                                      outerBound[0][1] + yExt,
+                                      outerBound[0][2],
+                                      outerBound[0][0] + xExt,
+                                      outerBound[0][1] + 2 * yExt,
+                                      outerBound[0][2] + zExt};
 
     // top
-    const auto BVH5 = csPair<csTriple<T>>{
-        outerBound[0][0],        outerBound[0][1],
-        outerBound[0][2] + zExt, outerBound[0][0] + xExt,
-        outerBound[0][1] + yExt, outerBound[0][2] + 2 * zExt};
-    const auto BVH6 = csPair<csTriple<T>>{
-        outerBound[0][0] + xExt, outerBound[0][1],
-        outerBound[0][2] + zExt, outerBound[0][0] + 2 * xExt,
-        outerBound[0][1] + yExt, outerBound[0][2] + 2 * zExt};
-    const auto BVH7 = csPair<csTriple<T>>{
+    const auto BVH5 =
+        Vec2D<Vec3D<T>>{outerBound[0][0],        outerBound[0][1],
+                        outerBound[0][2] + zExt, outerBound[0][0] + xExt,
+                        outerBound[0][1] + yExt, outerBound[0][2] + 2 * zExt};
+    const auto BVH6 =
+        Vec2D<Vec3D<T>>{outerBound[0][0] + xExt, outerBound[0][1],
+                        outerBound[0][2] + zExt, outerBound[0][0] + 2 * xExt,
+                        outerBound[0][1] + yExt, outerBound[0][2] + 2 * zExt};
+    const auto BVH7 = Vec2D<Vec3D<T>>{
         outerBound[0][0] + xExt,     outerBound[0][1] + yExt,
         outerBound[0][2] + zExt,     outerBound[0][0] + 2 * xExt,
         outerBound[0][1] + 2 * yExt, outerBound[0][2] + 2 * zExt};
-    const auto BVH8 = csPair<csTriple<T>>{outerBound[0][0],
-                                          outerBound[0][1] + yExt,
-                                          outerBound[0][2] + zExt,
-                                          outerBound[0][0] + xExt,
-                                          outerBound[0][1] + 2 * yExt,
-                                          outerBound[0][2] + 2 * zExt};
-    bounds = std::array<csPair<std::array<T, D>>, numCells>{
+    const auto BVH8 = Vec2D<Vec3D<T>>{outerBound[0][0],
+                                      outerBound[0][1] + yExt,
+                                      outerBound[0][2] + zExt,
+                                      outerBound[0][0] + xExt,
+                                      outerBound[0][1] + 2 * yExt,
+                                      outerBound[0][2] + 2 * zExt};
+    bounds = std::array<Vec2D<std::array<T, D>>, numCells>{
         BVH1, BVH2, BVH3, BVH4, BVH5, BVH6, BVH7, BVH8};
   }
 };
+
+} // namespace viennacs

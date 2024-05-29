@@ -4,23 +4,24 @@
 #include "csTracePath.hpp"
 #include "csTracingParticle.hpp"
 
-#include <lsSmartPointer.hpp>
 #include <rayBoundary.hpp>
 #include <rayGeometry.hpp>
-#include <rayRNG.hpp>
 #include <raySource.hpp>
-#include <rayUtil.hpp>
 
-template <typename SourceType, typename T, int D> class csTracingKernel {
+namespace viennacs {
+
+using namespace viennacore;
+
+template <typename SourceType, typename T, int D> class TracingKernel {
 public:
-  csTracingKernel(RTCDevice &pDevice, rayGeometry<T, D> &pRTCGeometry,
-                  rayBoundary<T, D> &pRTCBoundary,
-                  raySource<SourceType> &pSource,
-                  std::unique_ptr<csAbstractParticle<T>> &pParticle,
-                  const size_t pNumOfRayPerPoint, const size_t pNumOfRayFixed,
-                  const bool pUseRandomSeed, const size_t pRunNumber,
-                  lsSmartPointer<csDenseCellSet<T, D>> passedCellSet,
-                  int passedExclude)
+  TracingKernel(RTCDevice &pDevice, viennaray::Geometry<T, D> &pRTCGeometry,
+                viennaray::Boundary<T, D> &pRTCBoundary,
+                viennaray::Source<SourceType> &pSource,
+                std::unique_ptr<AbstractParticle<T>> &pParticle,
+                const size_t pNumOfRayPerPoint, const size_t pNumOfRayFixed,
+                const bool pUseRandomSeed, const size_t pRunNumber,
+                lsSmartPointer<csDenseCellSet<T, D>> passedCellSet,
+                int passedExclude)
       : mDevice(pDevice), mGeometry(pRTCGeometry), mBoundary(pRTCBoundary),
         mSource(pSource), mParticle(pParticle->clone()),
         mNumRays(pNumOfRayFixed == 0
@@ -82,7 +83,7 @@ public:
       for (long long idx = 0; idx < mNumRays; ++idx) {
         // particle specific RNG seed
         auto particleSeed = rayInternal::tea<3>(idx, seed);
-        rayRNG RngState(particleSeed);
+        RNG RngState(particleSeed);
 
         particle->initNew(RngState);
 
@@ -284,10 +285,10 @@ private:
 
 private:
   RTCDevice &mDevice;
-  rayGeometry<T, D> &mGeometry;
-  rayBoundary<T, D> &mBoundary;
-  raySource<SourceType> &mSource;
-  std::unique_ptr<csAbstractParticle<T>> const mParticle = nullptr;
+  viennaray::Geometry<T, D> &mGeometry;
+  viennaray::Boundary<T, D> &mBoundary;
+  viennaray::Source<SourceType> &mSource;
+  std::unique_ptr<AbstractParticle<T>> const mParticle = nullptr;
   const long long mNumRays;
   const bool mUseRandomSeeds;
   const size_t mRunNumber;
@@ -295,3 +296,5 @@ private:
   const T mGridDelta = 0.;
   const int excludeMaterial = -1;
 };
+
+} // namespace viennacs

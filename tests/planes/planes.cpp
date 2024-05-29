@@ -1,16 +1,20 @@
 #include <csDenseCellSet.hpp>
-#include <csTestAssert.hpp>
 
 #include <lsMakeGeometry.hpp>
+
+#include <vcTestAsserts.hpp>
+
+namespace ls = viennals;
+namespace cs = viennacs;
 
 int main() {
   using T = double;
   constexpr int D = 2;
 
   // two plane geometries
-  lsBoundaryConditionEnum<D> boundaryConds[D] = {
-      lsBoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY,
-      lsBoundaryConditionEnum<D>::INFINITE_BOUNDARY};
+  ls::BoundaryConditionEnum<D> boundaryConds[D] = {
+      ls::BoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY,
+      ls::BoundaryConditionEnum<D>::INFINITE_BOUNDARY};
   T bounds[2 * D] = {-1., 1., -1., 1.};
   T gridDelta = 0.2;
 
@@ -19,24 +23,24 @@ int main() {
   normal[D - 1] = 1.;
 
   auto plane1 =
-      lsSmartPointer<lsDomain<T, D>>::New(bounds, boundaryConds, gridDelta);
-  lsMakeGeometry<T, D>(plane1,
-                       lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+      ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryConds, gridDelta);
+  ls::MakeGeometry<T, D>(plane1,
+                         ls::SmartPointer<ls::Plane<T, D>>::New(origin, normal))
       .apply();
 
   origin[D - 1] = 1.;
   auto plane2 =
-      lsSmartPointer<lsDomain<T, D>>::New(bounds, boundaryConds, gridDelta);
-  lsMakeGeometry<T, D>(plane2,
-                       lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+      ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryConds, gridDelta);
+  ls::MakeGeometry<T, D>(plane2,
+                         ls::SmartPointer<ls::Plane<T, D>>::New(origin, normal))
       .apply();
 
   auto levelSets =
-      lsSmartPointer<std::vector<lsSmartPointer<lsDomain<T, D>>>>::New();
+      ls::SmartPointer<std::vector<ls::SmartPointer<ls::Domain<T, D>>>>::New();
   levelSets->push_back(plane1);
   levelSets->push_back(plane2);
 
-  csDenseCellSet<T, D> cellSet;
+  cs::DenseCellSet<T, D> cellSet;
   int coverMaterial = 0;
   bool isAboveSurface = true;
   T depth = 3.;
@@ -44,6 +48,6 @@ int main() {
   cellSet.setCoverMaterial(coverMaterial);
   cellSet.fromLevelSets(levelSets, nullptr, depth);
 
-  CSTEST_ASSERT(cellSet.getDepth() == depth);
-  CSTEST_ASSERT(cellSet.getNumberOfCells() == 160);
+  VC_TEST_ASSERT(cellSet.getDepth() == depth);
+  VC_TEST_ASSERT(cellSet.getNumberOfCells() == 160);
 }

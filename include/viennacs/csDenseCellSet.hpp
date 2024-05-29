@@ -1,9 +1,7 @@
 #pragma once
 
 #include "csBVH.hpp"
-#include "csLogger.hpp"
 #include "csTracePath.hpp"
-#include "csUtil.hpp"
 
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
@@ -11,25 +9,28 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <rayUtil.hpp>
 
 #include <bitset>
+
+namespace viennacs {
+
+using namespace viennacore;
 
 /**
   This class represents a cell-based voxel implementation of a volume. The
   depth of the cell set in z-direction can be specified.
 */
-template <class T, int D> class csDenseCellSet {
+template <class T, int D> class DenseCellSet {
 private:
-  using gridType = lsSmartPointer<lsMesh<T>>;
+  using gridType = SmartPointer<viennals::Mesh<T>>;
   using levelSetsType =
-      lsSmartPointer<std::vector<lsSmartPointer<lsDomain<T, D>>>>;
-  using materialMapType = lsSmartPointer<lsMaterialMap>;
+      SmartPointer<std::vector<SmartPointer<viennals::Domain<T, D>>>>;
+  using materialMapType = SmartPointer<viennals::MaterialMap>;
 
   levelSetsType levelSets = nullptr;
   gridType cellGrid = nullptr;
-  lsSmartPointer<lsDomain<T, D>> surface = nullptr;
-  lsSmartPointer<csBVH<T, D>> BVH = nullptr;
+  SmartPointer<viennals::Domain<T, D>> surface = nullptr;
+  SmartPointer<BVH<T, D>> bvh = nullptr;
   materialMapType materialMap = nullptr;
 
   T gridDelta;
@@ -48,11 +49,11 @@ private:
   const T eps = 1e-4;
 
 public:
-  csDenseCellSet() {}
+  DenseCellSet() {}
 
-  csDenseCellSet(levelSetsType passedLevelSets,
-                 materialMapType passedMaterialMap = nullptr,
-                 T passedDepth = 0., bool passedCellSetPosition = false)
+  DenseCellSet(levelSetsType passedLevelSets,
+               materialMapType passedMaterialMap = nullptr, T passedDepth = 0.,
+               bool passedCellSetPosition = false)
       : levelSets(passedLevelSets), cellSetAboveSurface(passedCellSetPosition) {
     fromLevelSets(passedLevelSets, passedMaterialMap, passedDepth);
   }
@@ -64,25 +65,25 @@ public:
     materialMap = passedMaterialMap;
 
     if (cellGrid == nullptr)
-      cellGrid = lsSmartPointer<lsMesh<T>>::New();
+      cellGrid = SmartPointer<viennals::Mesh<T>>::New();
 
     if (surface == nullptr)
-      surface = lsSmartPointer<lsDomain<T, D>>::New(levelSets->back());
+      surface = SmartPointer<viennals::Domain<T, D>>::New(levelSets->back());
     else
       surface->deepCopy(levelSets->back());
 
     gridDelta = surface->getGrid().getGridDelta();
 
     depth = passedDepth;
-    std::vector<lsSmartPointer<lsDomain<T, D>>> levelSetsInOrder;
-    auto plane = lsSmartPointer<lsDomain<T, D>>::New(surface->getGrid());
+    std::vector<SmartPointer<viennals::Domain<T, D>>> levelSetsInOrder;
+    auto plane = SmartPointer<viennals::Domain<T, D>>::New(surface->getGrid());
     {
       T origin[D] = {0.};
       T normal[D] = {0.};
       origin[D - 1] = depth;
       normal[D - 1] = 1.;
-      lsMakeGeometry<T, D>(plane,
-                           lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+      viennals::MakeGeometry<T, D>(
+          plane, SmartPointer<viennals::Plane<T, D>>::New(origin, normal))
           .apply();
     }
     if (!cellSetAboveSurface)
@@ -94,18 +95,19 @@ public:
     }
 
     calculateMinMaxIndex(levelSetsInOrder);
-    lsToVoxelMesh<T, D>(levelSetsInOrder, cellGrid).apply();
+    viennals::ToVoxelMesh<T, D>(levelSetsInOrder, cellGrid).apply();
     // lsToVoxelMesh also saves the extent in the cell grid
 
 #ifndef NDEBUG
     int db_ls = 0;
     for (auto &ls : levelSetsInOrder) {
-      auto mesh = lsSmartPointer<lsMesh<T>>::New();
-      lsToSurfaceMesh<T, D>(ls, mesh).apply();
-      lsVTKWriter<T>(mesh, "cellSet_debug_" + std::to_string(db_ls++) + ".vtp")
+      auto mesh = SmartPointer<viennals::Mesh<T>>::New();
+      viennals::ToSurfaceMesh<T, D>(ls, mesh).apply();
+      viennals::VTKWriter<T>(mesh, "cellSet_debug_" + std::to_string(db_ls++) +
+                                       ".vtp")
           .apply();
     }
-    lsVTKWriter<T>(cellGrid, "cellSet_debug_init.vtu").apply();
+    viennals::VTKWriter<T>(cellGrid, "cellSet_debug_init.vtu").apply();
 #endif
 
     adjustMaterialIds();
@@ -136,16 +138,15 @@ public:
       minExtent /= 2;
     }
 
-    BVH = lsSmartPointer<csBVH<T, D>>::New(getBoundingBox(), BVHlayers);
+    bvh = SmartPointer<BVH<T, D>>::New(getBoundingBox(), BVHlayers);
     buildBVH();
   }
 
-  csPair<std::array<T, D>> getBoundingBox() const {
+  Vec2D<std::array<T, D>> getBoundingBox() const {
     if constexpr (D == 3)
-      return csPair<csTriple<T>>{cellGrid->minimumExtent,
-                                 cellGrid->maximumExtent};
+      return Vec2D<Vec3D<T>>{cellGrid->minimumExtent, cellGrid->maximumExtent};
     else
-      return csPair<csPair<T>>{
+      return Vec2D<Vec2D<T>>{
           cellGrid->minimumExtent[0], cellGrid->minimumExtent[1],
           cellGrid->maximumExtent[0], cellGrid->maximumExtent[1]};
   }
@@ -189,9 +190,9 @@ public:
     return cellGrid->template getElements<(1 << D)>()[idx];
   }
 
-  lsSmartPointer<lsDomain<T, D>> getSurface() { return surface; }
+  SmartPointer<viennals::Domain<T, D>> getSurface() { return surface; }
 
-  lsSmartPointer<lsMesh<T>> getCellGrid() { return cellGrid; }
+  SmartPointer<viennals::Mesh<T>> getCellGrid() { return cellGrid; }
 
   levelSetsType getLevelSets() const { return levelSets; }
 
@@ -200,7 +201,7 @@ public:
   std::vector<T> *getFillingFractions() const { return fillingFractions; }
 
   T getFillingFraction(const std::array<T, D> &point) {
-    csTriple<T> point3 = {0., 0., 0.};
+    Vec3D<T> point3 = {0., 0., 0.};
     for (int i = 0; i < D; i++)
       point3[i] = point[i];
     auto idx = findIndex(point3);
@@ -219,7 +220,7 @@ public:
       auto node = cellGrid->getNodes()[cell[0]];
       for (int j = 0; j < D; j++)
         node[j] += gridDelta / 2.;
-      if (csUtil::distance(node, point) < radius) {
+      if (Distance(node, point) < radius) {
         sum += fillingFractions->at(i);
         count++;
       }
@@ -307,7 +308,7 @@ public:
 
   // Write the cell set as .vtu file
   void writeVTU(std::string fileName) {
-    lsVTKWriter<T>(cellGrid, fileName).apply();
+    viennals::VTKWriter<T>(cellGrid, fileName).apply();
   }
 
   // Save cell set data in simple text format
@@ -338,7 +339,7 @@ public:
     std::string line;
 
     if (!file.is_open()) {
-      csLogger::getInstance()
+      Logger::getInstance()
           .addWarning("Could not open file " + fileName)
           .print();
       return;
@@ -346,7 +347,7 @@ public:
 
     std::getline(file, line);
     if (std::stoi(line) != numberOfCells) {
-      csLogger::getInstance().addWarning("Incompatible cell set data.").print();
+      Logger::getInstance().addWarning("Incompatible cell set data.").print();
       return;
     }
 
@@ -401,15 +402,15 @@ public:
     auto materialIds = getScalarData("Material");
 
     // create overlay material
-    std::vector<lsSmartPointer<lsDomain<T, D>>> levelSetsInOrder;
-    auto plane = lsSmartPointer<lsDomain<T, D>>::New(surface->getGrid());
+    std::vector<SmartPointer<viennals::Domain<T, D>>> levelSetsInOrder;
+    auto plane = SmartPointer<viennals::Domain<T, D>>::New(surface->getGrid());
     {
       T origin[D] = {0.};
       T normal[D] = {0.};
       origin[D - 1] = depth;
       normal[D - 1] = 1.;
-      lsMakeGeometry<T, D>(plane,
-                           lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+      viennals::MakeGeometry<T, D>(
+          plane, SmartPointer<viennals::Plane<T, D>>::New(origin, normal))
           .apply();
     }
     if (!cellSetAboveSurface)
@@ -420,13 +421,14 @@ public:
       levelSetsInOrder.push_back(plane);
 
     // set up iterators for all materials
-    std::vector<hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>>
+    std::vector<
+        hrleConstDenseCellIterator<typename viennals::Domain<T, D>::DomainType>>
         iterators;
     for (auto it = levelSetsInOrder.begin(); it != levelSetsInOrder.end();
          ++it) {
-      iterators.push_back(
-          hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>(
-              (*it)->getDomain(), minIndex));
+      iterators.push_back(hrleConstDenseCellIterator<
+                          typename viennals::Domain<T, D>::DomainType>(
+          (*it)->getDomain(), minIndex));
     }
 
     // move iterator for lowest material id and then adjust others if they are
@@ -490,18 +492,19 @@ public:
   // Updates the surface of the cell set. The new surface should be below the
   // old surface as this function can only remove cells from the cell set.
   void updateSurface() {
-    auto updateCellGrid = lsSmartPointer<lsMesh<T>>::New();
+    auto updateCellGrid = SmartPointer<viennals::Mesh<T>>::New();
 
-    lsToVoxelMesh<T, D> voxelConverter(updateCellGrid);
+    viennals::ToVoxelMesh<T, D> voxelConverter(updateCellGrid);
     {
-      auto plane = lsSmartPointer<lsDomain<T, D>>::New(surface->getGrid());
+      auto plane =
+          SmartPointer<viennals::Domain<T, D>>::New(surface->getGrid());
       T origin[D] = {0.};
       T normal[D] = {0.};
       origin[D - 1] = depth;
       normal[D - 1] = 1.;
 
-      lsMakeGeometry<T, D>(plane,
-                           lsSmartPointer<lsPlane<T, D>>::New(origin, normal))
+      viennals::MakeGeometry<T, D>(
+          plane, SmartPointer<viennals::Plane<T, D>>::New(origin, normal))
           .apply();
       voxelConverter.insertNextLevelSet(plane);
     }
@@ -533,7 +536,7 @@ public:
   }
 
   // Merge a trace path to the cell set.
-  void mergePath(csTracePath<T> &path, T factor = 1.) {
+  void mergePath(TracePath<T> &path, T factor = 1.) {
     auto ff = getFillingFractions();
     if (!path.getData().empty()) {
       for (const auto it : path.getData()) {
@@ -553,7 +556,7 @@ public:
     if (!cellNeighbors.empty() && !forceRebuild)
       return;
 
-    csUtil::Timer timer;
+    Timer timer;
     timer.start();
     const auto &cells = cellGrid->template getElements<(1 << D)>();
     const auto &nodes = cellGrid->getNodes();
@@ -614,7 +617,7 @@ public:
 
             auto neighborCoord = getCellCenter(neighborCell);
 
-            if (csUtil::distance(coord, neighborCoord) < gridDelta + eps) {
+            if (Distance(coord, neighborCoord) < gridDelta + eps) {
 
               for (int i = 0; i < D; i++) {
                 if (coord[i] - neighborCoord[i] > gridDelta / 2.) {
@@ -629,7 +632,7 @@ public:
       }
     }
     timer.finish();
-    csLogger::getInstance()
+    Logger::getInstance()
         .addTiming("Building cell set neighborhood structure took",
                    timer.currentDuration * 1e-9)
         .print();
@@ -640,19 +643,19 @@ public:
     return cellNeighbors[cellIdx];
   }
 
-  bool isPointInCell(const csTriple<T> &point, unsigned int cellIdx) const {
+  bool isPointInCell(const Vec3D<T> &point, unsigned int cellIdx) const {
     const auto &elem = getElement(cellIdx);
     const auto &cellMin = getNode(elem[0]);
     return isPointInCell(point, cellMin);
   }
 
 private:
-  int findIndex(const csTriple<T> &point) const {
+  int findIndex(const Vec3D<T> &point) const {
     const auto &elems = cellGrid->template getElements<(1 << D)>();
     const auto &nodes = cellGrid->getNodes();
     int idx = -1;
 
-    auto cellIds = BVH->getCellIds(point);
+    auto cellIds = bvh->getCellIds(point);
     if (!cellIds)
       return idx;
     for (const auto cellId : *cellIds) {
@@ -684,7 +687,7 @@ private:
     }
   }
 
-  int findSurfaceHitPoint(csTriple<T> &hitPoint, const csTriple<T> &direction) {
+  int findSurfaceHitPoint(Vec3D<T> &hitPoint, const Vec3D<T> &direction) {
     // find surface hit point
     auto idx = findIndex(hitPoint);
 
@@ -704,8 +707,7 @@ private:
     return idx;
   }
 
-  bool isPointInCell(const csTriple<T> &point,
-                     const csTriple<T> &cellMin) const {
+  bool isPointInCell(const Vec3D<T> &point, const Vec3D<T> &cellMin) const {
     if constexpr (D == 3)
       return point[0] >= cellMin[0] && point[0] <= (cellMin[0] + gridDelta) &&
              point[1] >= cellMin[1] && point[1] <= (cellMin[1] + gridDelta) &&
@@ -716,30 +718,31 @@ private:
   }
 
   void buildBVH() {
-    csUtil::Timer timer;
+    Timer timer;
     timer.start();
     auto &elems = cellGrid->template getElements<(1 << D)>();
     auto &nodes = cellGrid->getNodes();
-    BVH->clearCellIds();
+    bvh->clearCellIds();
 
     for (size_t elemIdx = 0; elemIdx < elems.size(); elemIdx++) {
       for (size_t n = 0; n < (1 << D); n++) {
         auto &node = nodes[elems[elemIdx][n]];
-        auto cell = BVH->getCellIds(node);
+        auto cell = bvh->getCellIds(node);
         if (cell == nullptr) {
-          csLogger::getInstance().addError("BVH building error.").print();
+          Logger::getInstance().addError("BVH building error.").print();
         }
         cell->insert(elemIdx);
       }
     }
     timer.finish();
-    csLogger::getInstance()
+    Logger::getInstance()
         .addTiming("Building cell set BVH took", timer.currentDuration * 1e-9)
         .print();
   }
 
-  void calculateMinMaxIndex(
-      const std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSetsInOrder) {
+  void
+  calculateMinMaxIndex(const std::vector<SmartPointer<viennals::Domain<T, D>>>
+                           &levelSetsInOrder) {
     // set to zero
     for (unsigned i = 0; i < D; ++i) {
       minIndex[i] = std::numeric_limits<hrleIndexType>::max();
@@ -777,3 +780,5 @@ private:
     return onBoundary;
   }
 };
+
+} // namespace viennacs

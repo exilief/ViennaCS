@@ -3,7 +3,11 @@
 #include <unordered_map>
 #include <vector>
 
-template <class T> class csTracePath {
+namespace viennacs {
+
+using namespace viennacore;
+
+template <class T> class TracePath {
 private:
   std::unordered_map<int, T> data;
   std::vector<T> gridData;
@@ -24,7 +28,7 @@ public:
     }
   }
 
-  void addPath(csTracePath &path) {
+  void addPath(TracePath &path) {
     for (const auto it : path.getData()) {
       addPoint(it.first, it.second);
     }
@@ -39,3 +43,5 @@ public:
     gridData.clear();
   }
 };
+
+} // namespace viennacs
