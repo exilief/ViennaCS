@@ -235,14 +235,14 @@ private:
     auto levelSets = cellSet->getLevelSets();
     auto diskMesh = SmartPointer<lsMesh<T>>::New();
     lsToDiskMesh<T, D> converter(diskMesh);
-    for (auto ls : *levelSets) {
+    for (auto ls : levelSets) {
       converter.insertNextLevelSet(ls);
     }
     converter.apply();
     auto points = diskMesh->getNodes();
     auto normals = *diskMesh->getCellData().getVectorData("Normals");
     auto materialIds = *diskMesh->getCellData().getScalarData("MaterialIds");
-    mGridDelta = levelSets->back()->getGrid().getGridDelta();
+    mGridDelta = levelSets.back()->getGrid().getGridDelta();
     mGeometry.initGeometry(mDevice, points, normals,
                            mGridDelta * rayInternal::DiskFactor<D>);
     mGeometry.setMaterialIds(materialIds);

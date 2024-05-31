@@ -35,10 +35,9 @@ int main() {
                          ls::SmartPointer<ls::Plane<T, D>>::New(origin, normal))
       .apply();
 
-  auto levelSets =
-      ls::SmartPointer<std::vector<ls::SmartPointer<ls::Domain<T, D>>>>::New();
-  levelSets->push_back(plane1);
-  levelSets->push_back(plane2);
+  auto levelSets = std::vector<ls::SmartPointer<ls::Domain<T, D>>>{};
+  levelSets.push_back(plane1);
+  levelSets.push_back(plane2);
 
   cs::DenseCellSet<T, D> cellSet;
   int coverMaterial = 0;

@@ -30,7 +30,7 @@ public:
                                             const Vec3D<T> &geomNormal,
                                             bool &reflect, RNG &rng) = 0;
   virtual T getSourceDistributionPower() const = 0;
-  virtual csPair<T> getMeanFreePath() const = 0;
+  virtual std::array<T, 2> getMeanFreePath() const = 0;
   virtual T collision(VolumeParticle<T> &particle, RNG &rng,
                       std::vector<VolumeParticle<T>> &particleStack) = 0;
 };
@@ -49,7 +49,7 @@ public:
     return std::pair<T, Vec3D<T>>{1., Vec3D<T>{0., 0., 0.}};
   }
   virtual T getSourceDistributionPower() const override { return 1.; }
-  virtual csPair<T> getMeanFreePath() const override { return {1., 1.}; }
+  virtual std::array<T, 2> getMeanFreePath() const override { return {1., 1.}; }
   virtual T collision(VolumeParticle<T> &particle, RNG &rng,
                       std::vector<VolumeParticle<T>> &particleStack) override {
     return 0.;

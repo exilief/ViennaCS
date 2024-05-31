@@ -113,6 +113,10 @@ public:
     auto coverage = cellSet->getScalarData(precursors[0].name);
     auto adsorbat = cellSet->getScalarData(precursors[1].name);
     while (time < precursors[0].duration) {
+#ifdef VIENNAPS_PYTHON_BUILD
+      if (PyErr_CheckSignals() != 0)
+        throw pybind11::error_already_set();
+#endif
       time +=
           timeStep(coverage, adsorbat, precursors[0].meanThermalVelocity,
                    precursors[0].adsorptionRate, precursors[0].desorptionRate,
@@ -158,6 +162,10 @@ public:
     coverage = cellSet->getScalarData(precursors[1].name);
     adsorbat = cellSet->getScalarData(precursors[0].name);
     while (time < precursors[1].duration) {
+#ifdef VIENNAPS_PYTHON_BUILD
+      if (PyErr_CheckSignals() != 0)
+        throw pybind11::error_already_set();
+#endif
       time +=
           timeStep(coverage, adsorbat, precursors[1].meanThermalVelocity,
                    precursors[1].adsorptionRate, precursors[1].desorptionRate,
@@ -183,10 +191,6 @@ private:
                        const NumericType adsorptionRate,
                        const NumericType desorptionRate,
                        const NumericType inFlux, const bool modify) {
-#ifdef VIENNAPS_PYTHON_BUILD
-    if (PyErr_CheckSignals() != 0)
-      throw pybind11::error_already_set();
-#endif
 
     const auto gridDelta = cellSet->getGridDelta();
     const NumericType diffusionFactor =

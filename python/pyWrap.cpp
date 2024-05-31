@@ -25,6 +25,7 @@
 // all header files which define API functions
 #include <csAtomicLayerProcess.hpp>
 #include <csDenseCellSet.hpp>
+#include <csMeanFreePath.hpp>
 #include <csSegmentCells.hpp>
 
 using namespace viennacs;
@@ -60,6 +61,9 @@ PYBIND11_MODULE(VIENNACS_MODULE_NAME, module) {
   pybind11::class_<DenseCellSet<T, D>, SmartPointer<DenseCellSet<T, D>>>(
       module, "DenseCellSet")
       .def(pybind11::init())
+      .def("fromLevelSets", &DenseCellSet<T, D>::fromLevelSets,
+           pybind11::arg("levelSets"), pybind11::arg("materialMap") = nullptr,
+           pybind11::arg("depth") = 0.)
       .def("getBoundingBox", &DenseCellSet<T, D>::getBoundingBox)
       .def(
           "addScalarData",
@@ -104,7 +108,6 @@ PYBIND11_MODULE(VIENNACS_MODULE_NAME, module) {
            "Get the labels of the scalar data stored in the cell set.")
       .def("getIndex", &DenseCellSet<T, D>::getIndex,
            "Get the index of the cell containing the given point.")
-      .def("getCellSetPosition", &DenseCellSet<T, D>::getCellSetPosition)
       .def("setCellSetPosition", &DenseCellSet<T, D>::setCellSetPosition,
            "Set whether the cell set should be created below (false) or above "
            "(true) the surface.")
@@ -161,7 +164,7 @@ PYBIND11_MODULE(VIENNACS_MODULE_NAME, module) {
       .def(pybind11::init<SmartPointer<DenseCellSet<T, D>>, std::string, int>(),
            pybind11::arg("cellSet"),
            pybind11::arg("cellTypeString") = "CellType",
-           pybind11::arg("bulkMaterial") = 15)
+           pybind11::arg("bulkMaterial") = 1)
       .def("setCellSet", &SegmentCells<T, D>::setCellSet,
            "Set the cell set in the segmenter.")
       .def("setCellTypeString", &SegmentCells<T, D>::setCellTypeString,
@@ -170,6 +173,19 @@ PYBIND11_MODULE(VIENNACS_MODULE_NAME, module) {
            "Set the bulk material in the segmenter.")
       .def("apply", &SegmentCells<T, D>::apply,
            "Segment the cells into surface, material, and gas cells.");
+
+  // Mean Free Path
+  pybind11::class_<MeanFreePath<T, D>, SmartPointer<MeanFreePath<T, D>>>(
+      module, "MeanFreePath")
+      .def(pybind11::init<SmartPointer<DenseCellSet<T, D>>>())
+      .def("setNumRaysPerCell", &MeanFreePath<T, D>::setNumRaysPerCell)
+      .def("setReflectionLimit", &MeanFreePath<T, D>::setReflectionLimit)
+      .def("setRngSeed", &MeanFreePath<T, D>::setRngSeed)
+      .def("setMaterial", &MeanFreePath<T, D>::setMaterial)
+      .def("setBulkLambda", &MeanFreePath<T, D>::setBulkLambda)
+      .def("enableSmoothing", &MeanFreePath<T, D>::enableSmoothing)
+      .def("disableSmoothing", &MeanFreePath<T, D>::disableSmoothing)
+      .def("apply", &MeanFreePath<T, D>::apply);
 
   // Atomic Layer Process
   pybind11::class_<AtomicLayerProcess<T, D>,

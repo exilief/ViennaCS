@@ -32,19 +32,19 @@ namespace cs = viennacs;
 namespace ls = viennals;
 
 using levelSetType = cs::SmartPointer<ls::Domain<T, D>>;
-using levelSetsType = cs::SmartPointer<std::vector<levelSetType>>;
+using levelSetsType = std::vector<levelSetType>;
 using materialMapType = cs::SmartPointer<ls::MaterialMap>;
 
-void addLevelSet(levelSetsType levelSets, levelSetType levelSet,
+void addLevelSet(levelSetsType &levelSets, levelSetType levelSet,
                  materialMapType matMap, int material,
                  bool wrapLowerLevelSet = true) {
-  if (!levelSets->empty() && wrapLowerLevelSet) {
-    ls::BooleanOperation<T, D>(levelSet, levelSets->back(),
+  if (!levelSets.empty() && wrapLowerLevelSet) {
+    ls::BooleanOperation<T, D>(levelSet, levelSets.back(),
                                ls::BooleanOperationEnum::UNION)
         .apply();
   }
 
-  levelSets->push_back(levelSet);
+  levelSets.push_back(levelSet);
   matMap->insertNextMaterial(material);
 }
 
@@ -79,7 +79,7 @@ auto makeStructure(const Parameters<T> &params, materialMapType matMap) {
   T normal[D] = {};
   normal[D - 1] = 1.;
 
-  auto levelSets = levelSetsType::New();
+  levelSetsType levelSets;
 
   // Substrate
   origin[D - 1] = 0.;
@@ -179,11 +179,11 @@ void solveDiffusionStep(cs::DenseCellSet<T, D> &cellSet,
   *data = std::move(solution);
 }
 
-void saveVolumeMesh(std::string name, levelSetsType levelSets,
+void saveVolumeMesh(std::string name, levelSetsType &levelSets,
                     materialMapType matMap) {
   ls::WriteVisualizationMesh<T, D> writer;
   writer.setFileName(name);
-  for (auto ls : *levelSets)
+  for (auto ls : levelSets)
     writer.insertNextLevelSet(ls);
   writer.setMaterialMap(matMap);
   writer.apply();

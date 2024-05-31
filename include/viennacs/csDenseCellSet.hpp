@@ -23,11 +23,10 @@ using namespace viennacore;
 template <class T, int D> class DenseCellSet {
 private:
   using gridType = SmartPointer<viennals::Mesh<T>>;
-  using levelSetsType =
-      SmartPointer<std::vector<SmartPointer<viennals::Domain<T, D>>>>;
+  using levelSetsType = std::vector<SmartPointer<viennals::Domain<T, D>>>;
   using materialMapType = SmartPointer<viennals::MaterialMap>;
 
-  levelSetsType levelSets = nullptr;
+  levelSetsType levelSets;
   gridType cellGrid = nullptr;
   SmartPointer<viennals::Domain<T, D>> surface = nullptr;
   SmartPointer<BVH<T, D>> bvh = nullptr;
@@ -68,9 +67,9 @@ public:
       cellGrid = SmartPointer<viennals::Mesh<T>>::New();
 
     if (surface == nullptr)
-      surface = SmartPointer<viennals::Domain<T, D>>::New(levelSets->back());
+      surface = SmartPointer<viennals::Domain<T, D>>::New(levelSets.back());
     else
-      surface->deepCopy(levelSets->back());
+      surface->deepCopy(levelSets.back());
 
     gridDelta = surface->getGrid().getGridDelta();
 
@@ -88,7 +87,7 @@ public:
     }
     if (!cellSetAboveSurface)
       levelSetsInOrder.push_back(plane);
-    for (auto ls : *levelSets)
+    for (auto &ls : levelSets)
       levelSetsInOrder.push_back(ls);
     if (cellSetAboveSurface) {
       levelSetsInOrder.push_back(plane);
@@ -414,7 +413,7 @@ public:
     }
     if (!cellSetAboveSurface)
       levelSetsInOrder.push_back(plane);
-    for (auto ls : *levelSets)
+    for (auto ls : levelSets)
       levelSetsInOrder.push_back(ls);
     if (cellSetAboveSurface)
       levelSetsInOrder.push_back(plane);
@@ -507,7 +506,7 @@ public:
           .apply();
       voxelConverter.insertNextLevelSet(plane);
     }
-    voxelConverter.insertNextLevelSet(levelSets->back());
+    voxelConverter.insertNextLevelSet(levelSets.back());
     voxelConverter.insertNextLevelSet(surface);
     voxelConverter.apply();
 
@@ -529,7 +528,7 @@ public:
       }
     }
     numberOfCells = elements.size();
-    surface->deepCopy(levelSets->back());
+    surface->deepCopy(levelSets.back());
 
     buildBVH();
   }
