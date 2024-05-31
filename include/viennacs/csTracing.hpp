@@ -62,8 +62,8 @@ public:
         boundingBox, mSourceDirection, mGridDelta * rayInternal::DiskFactor<D>);
     auto traceSettings = rayInternal::getTraceSettings(mSourceDirection);
 
-    auto boundary = rayBoundary<T, D>(mDevice, boundingBox, mBoundaryConditions,
-                                      traceSettings);
+    auto boundary = viennaray::Boundary<T, D>(
+        mDevice, boundingBox, mBoundaryConditions, traceSettings);
 
     std::array<Vec3D<T>, 3> orthoBasis;
     if (usePrimaryDirection) {
@@ -78,21 +78,23 @@ public:
 
     if (usePointSource) {
       auto raySource =
-          csPointSource<T, D>(pointSourceOrigin, pointSourceDirection,
-                              traceSettings, mGeometry.getNumPoints());
+          PointSource<T, D>(pointSourceOrigin, pointSourceDirection,
+                            traceSettings, mGeometry.getNumPoints());
 
-      TracingKernel(mDevice, mGeometry, boundary, raySource, mParticle,
-                    mNumberOfRaysPerPoint, mNumberOfRaysFixed, mUseRandomSeeds,
-                    mRunNumber++, cellSet, excludeMaterialId - 1)
+      TracingKernel<T, D>(mDevice, mGeometry, boundary, raySource, mParticle,
+                          mNumberOfRaysPerPoint, mNumberOfRaysFixed,
+                          mUseRandomSeeds, mRunNumber++, cellSet,
+                          excludeMaterialId - 1)
           .apply();
     } else {
-      auto raySource = raySourceRandom<T, D>(
+      auto raySource = viennaray::SourceRandom<T, D>(
           boundingBox, mParticle->getSourceDistributionPower(), traceSettings,
           mGeometry.getNumPoints(), usePrimaryDirection, orthoBasis);
 
-      TracingKernel(mDevice, mGeometry, boundary, raySource, mParticle,
-                    mNumberOfRaysPerPoint, mNumberOfRaysFixed, mUseRandomSeeds,
-                    mRunNumber++, cellSet, excludeMaterialId - 1)
+      TracingKernel<T, D>(mDevice, mGeometry, boundary, raySource, mParticle,
+                          mNumberOfRaysPerPoint, mNumberOfRaysFixed,
+                          mUseRandomSeeds, mRunNumber++, cellSet,
+                          excludeMaterialId - 1)
           .apply();
     }
 
@@ -233,8 +235,8 @@ public:
 private:
   void createGeometry() {
     auto levelSets = cellSet->getLevelSets();
-    auto diskMesh = SmartPointer<lsMesh<T>>::New();
-    lsToDiskMesh<T, D> converter(diskMesh);
+    auto diskMesh = SmartPointer<viennals::Mesh<T>>::New();
+    viennals::ToDiskMesh<T, D> converter(diskMesh);
     for (auto ls : levelSets) {
       converter.insertNextLevelSet(ls);
     }

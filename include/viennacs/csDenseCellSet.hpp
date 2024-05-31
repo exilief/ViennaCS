@@ -10,6 +10,9 @@
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+#include <vcUtil.hpp>
+#include <vcVectorUtil.hpp>
+
 #include <bitset>
 
 namespace viennacs {

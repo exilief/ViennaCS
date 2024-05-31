@@ -12,15 +12,15 @@ namespace viennacs {
 
 using namespace viennacore;
 
-template <typename SourceType, typename T, int D> class TracingKernel {
+template <typename T, int D> class TracingKernel {
 public:
   TracingKernel(RTCDevice &pDevice, viennaray::Geometry<T, D> &pRTCGeometry,
                 viennaray::Boundary<T, D> &pRTCBoundary,
-                viennaray::Source<SourceType> &pSource,
+                viennaray::Source<T> &pSource,
                 std::unique_ptr<AbstractParticle<T>> &pParticle,
                 const size_t pNumOfRayPerPoint, const size_t pNumOfRayFixed,
                 const bool pUseRandomSeed, const size_t pRunNumber,
-                lsSmartPointer<csDenseCellSet<T, D>> passedCellSet,
+                SmartPointer<DenseCellSet<T, D>> passedCellSet,
                 int passedExclude)
       : mDevice(pDevice), mGeometry(pRTCGeometry), mBoundary(pRTCBoundary),
         mSource(pSource), mParticle(pParticle->clone()),
@@ -48,7 +48,7 @@ public:
     assert(rtcGetDeviceError(mDevice) == RTC_ERROR_NONE &&
            "Embree device error");
 
-    const csPair<T> meanFreePath = mParticle->getMeanFreePath();
+    const Vec2D<T> meanFreePath = mParticle->getMeanFreePath();
 
     auto myCellSet = cellSet;
 
@@ -70,7 +70,7 @@ public:
       auto particle = mParticle->clone();
 
       // thread local path
-      csTracePath<T> path;
+      TracePath<T> path;
       // if (!traceOnPath)
       path.useGridData(myCellSet->getNumberOfCells());
 
@@ -82,12 +82,14 @@ public:
 #pragma omp for schedule(dynamic)
       for (long long idx = 0; idx < mNumRays; ++idx) {
         // particle specific RNG seed
-        auto particleSeed = rayInternal::tea<3>(idx, seed);
+        auto particleSeed = tea<3>(idx, seed);
         RNG RngState(particleSeed);
 
         particle->initNew(RngState);
 
-        mSource.fillRay(rayHit.ray, idx, RngState); // fills also tnear
+        auto originAndDirection = mSource.getOriginAndDirection(idx, RngState);
+        rayInternal::fillRay(rayHit.ray, originAndDirection[0],
+                             originAndDirection[1]);
 
 #ifdef VIENNARAY_USE_RAY_MASKING
         rayHit.ray.mask = -1;
@@ -128,11 +130,12 @@ public:
               ray.org_y + ray.dir_y * ray.tfar;
           const rayInternal::rtcNumericType zz =
               ray.org_z + ray.dir_z * ray.tfar;
+          auto hitPoint = Vec3D<rayInternal::rtcNumericType>{xx, yy, zz};
 
           /* -------- Hit from back -------- */
-          const auto rayDir = rayTriple<T>{ray.dir_x, ray.dir_y, ray.dir_z};
+          const auto rayDir = Vec3D<T>{ray.dir_x, ray.dir_y, ray.dir_z};
           const auto geomNormal = mGeometry.getPrimNormal(rayHit.hit.primID);
-          if (rayInternal::DotProduct(rayDir, geomNormal) > 0) {
+          if (DotProduct(rayDir, geomNormal) > 0) {
             // If the dot product of the ray direction and the surface normal is
             // greater than zero, then we hit the back face of the disk.
             if (hitFromBack) {
@@ -165,12 +168,11 @@ public:
 
           if (mGeometry.getMaterialId(rayHit.hit.primID) != excludeMaterial) {
             // trace in cell set
-            auto hitPoint = std::array<T, 3>{xx, yy, zz};
-            std::vector<csVolumeParticle<T>> particleStack;
+            std::vector<VolumeParticle<T>> particleStack;
             std::normal_distribution<T> normalDist{meanFreePath[0],
                                                    meanFreePath[1]};
-
-            particleStack.emplace_back(csVolumeParticle<T>{
+            Vec3D<T> hitPoint = {xx, yy, zz};
+            particleStack.emplace_back(VolumeParticle<T>{
                 hitPoint, rayDir, fillnDirection.first, 0., -1, 0});
 
             while (!particleStack.empty()) {
@@ -182,9 +184,10 @@ public:
                 volumeParticle.distance = -1;
                 while (volumeParticle.distance < 0)
                   volumeParticle.distance = normalDist(RngState);
-                auto travelDist = csUtil::multNew(volumeParticle.direction,
-                                                  volumeParticle.distance);
-                csUtil::add(volumeParticle.position, travelDist);
+                auto traveledDist =
+                    volumeParticle.direction * volumeParticle.distance;
+                volumeParticle.position =
+                    traveledDist + volumeParticle.position;
 
                 if (!checkBoundsPeriodic(volumeParticle.position))
                   break;
@@ -208,27 +211,8 @@ public:
           }
 
           // Update ray direction and origin
-#ifdef ARCH_X86
-          reinterpret_cast<__m128 &>(rayHit.ray) =
-              _mm_set_ps(1e-4f, zz, yy, xx);
-          reinterpret_cast<__m128 &>(rayHit.ray.dir_x) = _mm_set_ps(
-              0.0f, (rayInternal::rtcNumericType)fillnDirection.second[2],
-              (rayInternal::rtcNumericType)fillnDirection.second[1],
-              (rayInternal::rtcNumericType)fillnDirection.second[0]);
-#else
-          rayHit.ray.org_x = xx;
-          rayHit.ray.org_y = yy;
-          rayHit.ray.org_z = zz;
-          rayHit.ray.tnear = 1e-4f;
+          rayInternal::fillRay(rayHit.ray, hitPoint, fillnDirection.second);
 
-          rayHit.ray.dir_x =
-              (rayInternal::rtcNumericType)fillnDirection.second[0];
-          rayHit.ray.dir_y =
-              (rayInternal::rtcNumericType)fillnDirection.second[1];
-          rayHit.ray.dir_z =
-              (rayInternal::rtcNumericType)fillnDirection.second[2];
-          rayHit.ray.time = 0.0f;
-#endif
         } while (reflect);
       } // end ray tracing for loop
 
@@ -241,7 +225,7 @@ public:
   }
 
 private:
-  bool checkBounds(const csTriple<T> &hitPoint) const {
+  bool checkBounds(const Vec3D<T> &hitPoint) const {
     const auto &min = cellSet->getCellGrid()->minimumExtent;
     const auto &max = cellSet->getCellGrid()->maximumExtent;
 
@@ -250,7 +234,7 @@ private:
            hitPoint[2] >= min[2] && hitPoint[2] <= max[2];
   }
 
-  bool checkBoundsPeriodic(csTriple<T> &hitPoint) const {
+  bool checkBoundsPeriodic(Vec3D<T> &hitPoint) const {
     const auto &min = cellSet->getCellGrid()->minimumExtent;
     const auto &max = cellSet->getCellGrid()->maximumExtent;
 
@@ -287,12 +271,12 @@ private:
   RTCDevice &mDevice;
   viennaray::Geometry<T, D> &mGeometry;
   viennaray::Boundary<T, D> &mBoundary;
-  viennaray::Source<SourceType> &mSource;
+  viennaray::Source<T> &mSource;
   std::unique_ptr<AbstractParticle<T>> const mParticle = nullptr;
   const long long mNumRays;
   const bool mUseRandomSeeds;
   const size_t mRunNumber;
-  lsSmartPointer<csDenseCellSet<T, D>> cellSet = nullptr;
+  SmartPointer<DenseCellSet<T, D>> cellSet = nullptr;
   const T mGridDelta = 0.;
   const int excludeMaterial = -1;
 };
