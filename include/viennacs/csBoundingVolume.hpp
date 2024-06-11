@@ -133,8 +133,8 @@ public:
 
 private:
   void buildBounds2D(const BoundsType &outerBound) {
-    auto xExt = (outerBound[1][0] - outerBound[0][0]) / 2.;
-    auto yExt = (outerBound[1][1] - outerBound[0][1]) / 2.;
+    T xExt = (outerBound[1][0] - outerBound[0][0]) / 2.;
+    T yExt = (outerBound[1][1] - outerBound[0][1]) / 2.;
 
     const auto BVH1 =
         Vec2D<Vec2D<T>>{outerBound[0][0], outerBound[0][1],
