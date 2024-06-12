@@ -392,11 +392,8 @@ public:
     std::vector<
         hrleConstDenseCellIterator<typename viennals::Domain<T, D>::DomainType>>
         iterators;
-    for (auto it = levelSetsInOrder.begin(); it != levelSetsInOrder.end();
-         ++it) {
-      iterators.push_back(hrleConstDenseCellIterator<
-                          typename viennals::Domain<T, D>::DomainType>(
-          (*it)->getDomain(), minIndex));
+    for (const auto &ls : levelSetsInOrder) {
+      iterators.emplace_back(ls->getDomain(), minIndex);
     }
 
     // move iterator for lowest material id and then adjust others if they are
@@ -419,11 +416,10 @@ public:
         }
 
         if (centerValue <= 0.) {
-          bool isVoxel;
+          bool isVoxel = true;
           // check if voxel is in bounds
-          for (unsigned i = 0; i < (1 << D); ++i) {
+          for (unsigned i = 0; i < (1 << D) && isVoxel; ++i) {
             hrleVectorType<hrleIndexType, D> index;
-            isVoxel = true;
             for (unsigned j = 0; j < D; ++j) {
               index[j] =
                   cellIt.getIndices(j) + cellIt.getCorner(i).getOffset()[j];
