@@ -73,15 +73,16 @@ set(VIENNACS_SYSTEM_VIENNALS
 
 include("cmake/cpm.cmake")
 
-CPMAddPackage(
-  NAME PackageProject
-  VERSION 1.11.1
-  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
-
 CPMFindPackage(
   NAME ViennaCore
   GIT_TAG main
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
+  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
+
+CPMAddPackage(
+  NAME PackageProject
+  VERSION 1.11.2
+  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
 CPMFindPackage(
@@ -96,8 +97,8 @@ CPMFindPackage(
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaLS"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
-target_link_libraries(${PROJECT_NAME} INTERFACE ViennaTools::ViennaRay ViennaTools::ViennaLS
-                                                ViennaTools::ViennaCore)
+target_link_libraries(${PROJECT_NAME} INTERFACE ViennaTools::ViennaCore ViennaTools::ViennaLS
+                                                ViennaTools::ViennaRay)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Examples
