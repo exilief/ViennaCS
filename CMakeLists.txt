@@ -75,7 +75,7 @@ include("cmake/cpm.cmake")
 
 CPMFindPackage(
   NAME ViennaCore
-  GIT_TAG main
+  GIT_TAG v1.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
 

@@ -48,52 +48,33 @@ if(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
-# Binding macro
-# --------------------------------------------------------------------------------------------------------
-
-macro(setup_binding NAME FLAGS)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VIENNACS_LIBRARY_OUTPUT_DIR}/${NAME})
-  set(MODULE_NAME "_${NAME}")
-
-  pybind11_add_module("${MODULE_NAME}" "pyWrap.cpp")
-  add_dependencies(${PROJECT_NAME} ${MODULE_NAME})
-
-  target_link_libraries(${MODULE_NAME} PUBLIC ViennaCS)
-  target_compile_definitions(${MODULE_NAME} PRIVATE ${FLAGS} -DVIENNACS_MODULE_NAME=${MODULE_NAME})
-
-  configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/__init__.py)
-
-  install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION ${NAME})
-  install(DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/" DESTINATION ${NAME})
-endmacro()
-
-# --------------------------------------------------------------------------------------------------------
 # Setup Bindings
 # --------------------------------------------------------------------------------------------------------
 
-setup_binding(viennacs2d -DVIENNACS_PYTHON_DIMENSION=2)
-setup_binding(viennacs3d -DVIENNACS_PYTHON_DIMENSION=3)
+viennacore_setup_binding(viennacs2d ${VIENNACS_LIBRARY_OUTPUT_DIR})
+viennacore_setup_binding(viennacs3d ${VIENNACS_LIBRARY_OUTPUT_DIR})
+
+target_link_libraries(viennacs2d PRIVATE ViennaCS)
+target_link_libraries(viennacs3d PRIVATE ViennaCS)
+
+target_compile_definitions(viennacs2d PRIVATE -DVIENNACS_PYTHON_DIMENSION=2
+                                              -DVIENNACS_MODULE_NAME=viennacs2d)
+target_compile_definitions(viennacs3d PRIVATE -DVIENNACS_PYTHON_DIMENSION=3
+                                              -DVIENNACS_MODULE_NAME=viennacs3d)
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Lib-Folder
+# --------------------------------------------------------------------------------------------------------
 
 set(VIENNACS_LIB_FOLDER "${VIENNACS_LIBRARY_OUTPUT_DIR}/viennacs.libs")
-set(VIENNACS_USE_LIB_FOLDER OFF)
 
-if(NOT VIENNACS_SYSTEM_VIENNARAY AND NOT VIENNARAY_SYSTEM_EMBREE)
-  set(VIENNACS_USE_LIB_FOLDER ON)
-  setup_embree_env(${MODULE_NAME} "${VIENNACS_LIB_FOLDER}")
-endif()
+# Not required for both targets, one will suffice
 
-if(NOT VIENNACS_SYSTEM_VIENNARAY AND NOT VIENNARAY_SYSTEM_TBB)
-  set(VIENNACS_USE_LIB_FOLDER ON)
-  setup_tbb_env(${MODULE_NAME} "${VIENNACS_LIB_FOLDER}")
-endif()
+setup_embree_env(viennacs2d "${VIENNACS_LIB_FOLDER}")
+setup_vtk_env(viennacs2d "${VIENNACS_LIB_FOLDER}")
+setup_tbb_env(viennacs2d "${VIENNACS_LIB_FOLDER}")
 
-if(NOT VIENNACS_SYSTEM_VIENNALS
-   AND (APPLE OR WIN32)
-   AND NOT VIENNALS_SYSTEM_VTK)
-  set(VIENNACS_USE_LIB_FOLDER ON)
-  setup_vtk_env(${MODULE_NAME} "${VIENNACS_LIB_FOLDER}")
-endif()
-
-if(VIENNACS_USE_LIB_FOLDER)
-  install(DIRECTORY "${VIENNACS_LIB_FOLDER}" DESTINATION .)
-endif()
+install(
+  DIRECTORY "${VIENNACS_LIB_FOLDER}"
+  DESTINATION .
+  OPTIONAL)
