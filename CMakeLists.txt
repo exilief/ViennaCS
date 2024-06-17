@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCS
   LANGUAGES CXX
-  VERSION 0.0.1)
+  VERSION 1.0.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -12,6 +12,12 @@ option(VIENNACS_BUILD_PYTHON "Build python bindings" OFF)
 
 option(VIENNACS_BUILD_EXAMPLES "Build examples" OFF)
 option(VIENNACS_BUILD_TESTS "Build tests" OFF)
+
+set(VIENNACS_LOOKUP_DIRS
+    ""
+    CACHE STRING "Directories to account for when searching installed dependencies")
+
+list(APPEND CMAKE_PREFIX_PATH ${VIENNACS_LOOKUP_DIRS})
 
 # --------------------------------------------------------------------------------------------------------
 # Global CMake Configuration
@@ -73,9 +79,9 @@ set(VIENNACS_SYSTEM_VIENNALS
 
 include("cmake/cpm.cmake")
 
-CPMFindPackage(
+CPMAddPackage(
   NAME ViennaCore
-  GIT_TAG v1.0.0
+  VERSION 1.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
 
@@ -87,7 +93,7 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaRay
-  GIT_TAG viennacore
+  VERSION 3.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaRay"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
