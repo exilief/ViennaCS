@@ -1,10 +1,10 @@
 <div align="center">
 
-![](https://raw.githubusercontent.com/ViennaTools/ViennaLS/master/assets/logo.png)
+![](https://raw.githubusercontent.com/ViennaTools/ViennaCore/main/assets/logo.png)
 
 <h1>ViennaCS</h1>
 
-[![🧪 Tests](https://github.com/ViennaTools/ViennaCS/actions/workflows/build.yml/badge.svg)](https://github.com/ViennaTools/ViennaCS/actions/workflows/build.yml)
+<!-- [![🧪 Tests](https://github.com/ViennaTools/ViennaCS/actions/workflows/build.yml/badge.svg)](https://github.com/ViennaTools/ViennaCS/actions/workflows/build.yml) -->
 
 </div>
 
