@@ -1,7 +1,6 @@
 #include <csDenseCellSet.hpp>
-#include <lsBooleanOperation.hpp>
-#include <lsWriteVisualizationMesh.hpp>
 
+#include "geometry.hpp"
 #include "parameters.hpp"
 
 namespace cs = viennacs;
@@ -13,92 +12,6 @@ constexpr int D = 2;
 const int substrateMaterial = 0;
 const int maskMaterial = 1;
 const int coverMaterial = 2;
-
-using levelSetType = cs::SmartPointer<ls::Domain<T, D>>;
-using levelSetsType = std::vector<levelSetType>;
-using materialMapType = cs::SmartPointer<ls::MaterialMap>;
-
-void addLevelSet(levelSetsType &levelSets, levelSetType levelSet,
-                 materialMapType matMap, int material,
-                 bool wrapLowerLevelSet = true) {
-  if (!levelSets.empty() && wrapLowerLevelSet) {
-    ls::BooleanOperation<T, D>(levelSet, levelSets.back(),
-                               ls::BooleanOperationEnum::UNION)
-        .apply();
-  }
-
-  levelSets.push_back(levelSet);
-  matMap->insertNextMaterial(material);
-}
-
-void makePlane(levelSetType &domain, const T *origin, const T *normal) {
-  ls::MakeGeometry<T, D>(domain,
-                         cs::SmartPointer<ls::Plane<T, D>>::New(origin, normal))
-      .apply();
-}
-
-void makeBox(levelSetType &domain, const T *minPoint, const T *maxPoint) {
-  ls::MakeGeometry<T, D>(
-      domain, cs::SmartPointer<ls::Box<T, D>>::New(minPoint, maxPoint))
-      .apply();
-}
-
-auto makeStructure(const Parameters<T> &params, materialMapType matMap) {
-  const T gridDelta = params.gridDelta;
-  const T substrateHeight = params.substrateHeight;
-  const T coverHeight = params.coverHeight;
-  const T maskHeight = params.maskHeight;
-  const T holeRadius = params.holeRadius;
-  ls::BoundaryConditionEnum<D> boundaryConds[D] = {
-      ls::BoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY,
-      ls::BoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY};
-  boundaryConds[D - 1] = ls::BoundaryConditionEnum<D>::INFINITE_BOUNDARY;
-  T bounds[2 * D] = {-params.xExtent / 2., params.xExtent / 2.,
-                     -params.yExtent / 2., params.yExtent / 2.};
-  bounds[2 * D - 2] = 0.;
-  bounds[2 * D - 1] = substrateHeight + maskHeight + gridDelta;
-
-  T origin[D] = {};
-  T normal[D] = {};
-  normal[D - 1] = 1.;
-
-  levelSetsType levelSets;
-
-  // Substrate
-  origin[D - 1] = 0.;
-  auto bottom = levelSetType::New(bounds, boundaryConds, gridDelta);
-  makePlane(bottom, origin, normal);
-  addLevelSet(levelSets, bottom, matMap, substrateMaterial);
-
-  origin[D - 1] = substrateHeight;
-  auto substrate = levelSetType::New(bounds, boundaryConds, gridDelta);
-  makePlane(substrate, origin, normal);
-  addLevelSet(levelSets, substrate, matMap, substrateMaterial);
-
-  // Mask
-  if (maskHeight > 0.) {
-    auto mask = levelSetType::New(bounds, boundaryConds, gridDelta);
-    origin[D - 1] = substrateHeight + maskHeight;
-    makePlane(mask, origin, normal);
-
-    auto maskAdd = levelSetType::New(bounds, boundaryConds, gridDelta);
-
-    T minPoint[D] = {-holeRadius, -holeRadius};
-    T maxPoint[D] = {holeRadius, holeRadius};
-    minPoint[D - 1] = substrateHeight - gridDelta;
-    maxPoint[D - 1] = substrateHeight + maskHeight + gridDelta;
-
-    makeBox(maskAdd, minPoint, maxPoint);
-
-    ls::BooleanOperation<T, D>(mask, maskAdd,
-                               ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
-        .apply();
-
-    addLevelSet(levelSets, mask, matMap, maskMaterial);
-  }
-
-  return levelSets;
-}
 
 template <typename Material> bool isMaterial(Material x, int material) {
   return static_cast<int>(x) == material;
@@ -155,16 +68,6 @@ void solveDiffusionStep(cs::DenseCellSet<T, D> &cellSet,
   *data = std::move(solution);
 }
 
-void saveVolumeMesh(std::string name, levelSetsType &levelSets,
-                    materialMapType matMap) {
-  ls::WriteVisualizationMesh<T, D> writer;
-  writer.setFileName(name);
-  for (const auto &ls : levelSets)
-    writer.insertNextLevelSet(ls);
-  writer.setMaterialMap(matMap);
-  writer.apply();
-}
-
 int main(int argc, char **argv) {
   cs::Logger::setLogLevel(cs::LogLevel::INTERMEDIATE);
 
@@ -179,8 +82,9 @@ int main(int argc, char **argv) {
   }
   omp_set_num_threads(params.numThreads);
 
-  auto matMap = materialMapType::New();
-  auto levelSets = makeStructure(params, matMap);
+  auto matMap = cs::SmartPointer<ls::MaterialMap>::New();
+  auto levelSets = geometry::makeStructure<T, D>(
+      params, matMap, substrateMaterial, maskMaterial);
 
   cs::DenseCellSet<T, D> cellSet;
   T depth = params.substrateHeight + params.coverHeight + 10.;
@@ -188,9 +92,10 @@ int main(int argc, char **argv) {
   cellSet.setCoverMaterial(coverMaterial);
   cellSet.fromLevelSets(levelSets, matMap, depth);
 
-  addConcentration(cellSet, params);
   // We need neighborhood information for solving the diffusion equation
   cellSet.buildNeighborhood();
+
+  addConcentration(cellSet, params);
   cellSet.writeVTU("initial.vtu");
 
   if (params.velocity != 0.) {
