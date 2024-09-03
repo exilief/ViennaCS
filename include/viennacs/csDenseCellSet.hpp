@@ -47,7 +47,7 @@ private:
   int coverMaterial = -1;
   std::bitset<D> periodicBoundary;
 
-  std::vector<T> *fillingFractions;
+  std::vector<T> *fillingFractions_;
   const T eps = 1e-4;
 
 public:
@@ -97,8 +97,127 @@ public:
     }
 
     calculateMinMaxIndex(levelSetsInOrder);
-    viennals::ToVoxelMesh<T, D>(levelSetsInOrder, cellGrid).apply();
+    // viennals::ToVoxelMesh<T, D>(levelSetsInOrder, cellGrid).apply();
     // lsToVoxelMesh also saves the extent in the cell grid
+    // save the extent of the resulting mesh
+    for (unsigned i = 0; i < D; ++i) {
+      cellGrid->minimumExtent[i] = std::numeric_limits<T>::max();
+      cellGrid->maximumExtent[i] = std::numeric_limits<T>::lowest();
+    }
+
+    std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
+                       typename hrleVectorType<hrleIndexType, D>::hash>
+        pointIdMapping;
+    size_t currentPointId = 0;
+
+    // prepare mesh for material ids and filling fractions
+    cellGrid->cellData.insertNextScalarData(
+        typename viennals::PointData<T>::ScalarDataType(), "Material");
+    cellGrid->cellData.insertNextScalarData(
+        typename viennals::PointData<T>::ScalarDataType(), "FillingFraction");
+    auto &materialIds = *(cellGrid->cellData.getScalarData(0));
+    auto &fillingFractions = *(cellGrid->cellData.getScalarData(1));
+    const bool useMaterialMap = materialMap != nullptr;
+
+    // set up iterators for all materials
+    std::vector<
+        hrleConstDenseCellIterator<typename viennals::Domain<T, D>::DomainType>>
+        iterators;
+    for (auto it = levelSetsInOrder.begin(); it != levelSetsInOrder.end();
+         ++it) {
+      iterators.push_back(hrleConstDenseCellIterator<
+                          typename viennals::Domain<T, D>::DomainType>(
+          (*it)->getDomain(), minIndex));
+    }
+
+    // move iterator for lowest material id and then adjust others if they are
+    // needed
+    unsigned counter = 0;
+    for (; iterators.front().getIndices() < maxIndex;
+         iterators.front().next()) {
+      // go over all materials
+      for (unsigned materialId = 0; materialId < levelSetsInOrder.size();
+           ++materialId) {
+
+        auto &cellIt = iterators[materialId];
+
+        cellIt.goToIndicesSequential(iterators.front().getIndices());
+
+        // find out whether the centre of the box is inside
+        T centerValue = 0.;
+        for (int i = 0; i < (1 << D); ++i) {
+          centerValue += cellIt.getCorner(i).getValue();
+        }
+
+        if (centerValue <= 0.) {
+          std::array<unsigned, 1 << D> voxel;
+          bool addVoxel;
+          // now insert all points of voxel into pointList
+          for (unsigned i = 0; i < (1 << D); ++i) {
+            hrleVectorType<hrleIndexType, D> index;
+            addVoxel = true;
+            for (unsigned j = 0; j < D; ++j) {
+              index[j] =
+                  cellIt.getIndices(j) + cellIt.getCorner(i).getOffset()[j];
+              if (index[j] > maxIndex[j]) {
+                addVoxel = false;
+                break;
+              }
+            }
+            if (addVoxel) {
+              auto pointIdValue = std::make_pair(index, currentPointId);
+              auto pointIdPair = pointIdMapping.insert(pointIdValue);
+              voxel[i] = pointIdPair.first->second;
+              if (pointIdPair.second) {
+                ++currentPointId;
+              }
+            } else {
+              break;
+            }
+          }
+
+          // create element if inside domain bounds
+          if (addVoxel) {
+            int material = materialId;
+            if (useMaterialMap)
+              material = materialMap->getMaterialId(materialId);
+
+            if constexpr (D == 3) {
+              // reorder elements for hexas to be ordered correctly
+              std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
+                                           voxel[2], voxel[4], voxel[5],
+                                           voxel[7], voxel[6]};
+              cellGrid->hexas.push_back(hexa);
+            } else {
+              std::array<unsigned, 4> tetra{voxel[0], voxel[2], voxel[3],
+                                            voxel[1]};
+              cellGrid->tetras.push_back(tetra);
+            }
+            materialIds.push_back(material);
+            fillingFractions.push_back(std::max(1., centerValue));
+          }
+          // jump out of material for loop
+          break;
+        }
+      }
+    }
+
+    // now insert points
+    cellGrid->nodes.resize(pointIdMapping.size());
+    for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
+      std::array<T, 3> coords{};
+      for (unsigned i = 0; i < D; ++i) {
+        coords[i] = gridDelta * it->first[i];
+
+        // save extent
+        if (coords[i] < cellGrid->minimumExtent[i]) {
+          cellGrid->minimumExtent[i] = coords[i];
+        } else if (coords[i] > cellGrid->maximumExtent[i]) {
+          cellGrid->maximumExtent[i] = coords[i];
+        }
+      }
+      cellGrid->nodes[it->second] = coords;
+    }
 
 #ifndef NDEBUG
     int db_ls = 0;
@@ -113,14 +232,11 @@ public:
 #endif
 
     adjustMaterialIds();
+    fillingFractions_ =
+        cellGrid->getCellData().getScalarData("FillingFraction");
 
     // create filling fractions as default scalar cell data
     numberOfCells = cellGrid->template getElements<(1 << D)>().size();
-    std::vector<T> fillingFractionsTemp(numberOfCells, 0.);
-
-    cellGrid->getCellData().insertNextScalarData(
-        std::move(fillingFractionsTemp), "fillingFraction");
-    fillingFractions = cellGrid->getCellData().getScalarData("fillingFraction");
 
     // calculate number of BVH layers
     for (unsigned i = 0; i < D; ++i) {
@@ -168,7 +284,8 @@ public:
     }
     std::vector<T> newData(numberOfCells, initValue);
     cellGrid->getCellData().insertNextScalarData(std::move(newData), name);
-    fillingFractions = cellGrid->getCellData().getScalarData("fillingFraction");
+    fillingFractions_ =
+        cellGrid->getCellData().getScalarData("FillingFraction");
     return cellGrid->getCellData().getScalarData(name);
   }
 
@@ -200,7 +317,7 @@ public:
 
   size_t getNumberOfCells() const { return numberOfCells; }
 
-  std::vector<T> *getFillingFractions() const { return fillingFractions; }
+  std::vector<T> *getFillingFractions() const { return fillingFractions_; }
 
   T getFillingFraction(const std::array<T, D> &point) {
     Vec3D<T> point3 = {0., 0., 0.};
@@ -223,7 +340,7 @@ public:
       for (int j = 0; j < D; j++)
         node[j] += gridDelta / 2.;
       if (Distance(node, point) < radius) {
-        sum += fillingFractions->at(i);
+        sum += fillingFractions_->at(i);
         count++;
       }
     }
@@ -286,7 +403,7 @@ public:
     if (idx < 0)
       return false;
 
-    fillingFractions->at(idx) += fill;
+    fillingFractions_->at(idx) += fill;
     return true;
   }
 
