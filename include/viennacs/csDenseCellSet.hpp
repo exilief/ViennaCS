@@ -77,24 +77,7 @@ public:
     gridDelta = surface->getGrid().getGridDelta();
 
     depth = passedDepth;
-    std::vector<SmartPointer<viennals::Domain<T, D>>> levelSetsInOrder;
-    auto plane = SmartPointer<viennals::Domain<T, D>>::New(surface->getGrid());
-    {
-      T origin[D] = {0.};
-      T normal[D] = {0.};
-      origin[D - 1] = depth;
-      normal[D - 1] = 1.;
-      viennals::MakeGeometry<T, D>(
-          plane, SmartPointer<viennals::Plane<T, D>>::New(origin, normal))
-          .apply();
-    }
-    if (!cellSetAboveSurface)
-      levelSetsInOrder.push_back(plane);
-    for (auto &ls : levelSets)
-      levelSetsInOrder.push_back(ls);
-    if (cellSetAboveSurface) {
-      levelSetsInOrder.push_back(plane);
-    }
+    auto levelSetsInOrder = getLevelSetsInOrder();
 
     calculateMinMaxIndex(levelSetsInOrder);
     // viennals::ToVoxelMesh<T, D>(levelSetsInOrder, cellGrid).apply();
@@ -520,33 +503,14 @@ public:
     auto materialIds = getScalarData("Material");
 
     // create overlay material
-    std::vector<SmartPointer<viennals::Domain<T, D>>> levelSetsInOrder;
-    auto plane = SmartPointer<viennals::Domain<T, D>>::New(surface->getGrid());
-    {
-      T origin[D] = {0.};
-      T normal[D] = {0.};
-      origin[D - 1] = depth;
-      normal[D - 1] = 1.;
-      viennals::MakeGeometry<T, D>(
-          plane, SmartPointer<viennals::Plane<T, D>>::New(origin, normal))
-          .apply();
-    }
-    if (!cellSetAboveSurface)
-      levelSetsInOrder.push_back(plane);
-    for (auto ls : levelSets)
-      levelSetsInOrder.push_back(ls);
-    if (cellSetAboveSurface)
-      levelSetsInOrder.push_back(plane);
+    auto levelSetsInOrder = getLevelSetsInOrder();
 
     // set up iterators for all materials
     std::vector<
         hrleConstDenseCellIterator<typename viennals::Domain<T, D>::DomainType>>
         iterators;
-    for (auto it = levelSetsInOrder.begin(); it != levelSetsInOrder.end();
-         ++it) {
-      iterators.push_back(hrleConstDenseCellIterator<
-                          typename viennals::Domain<T, D>::DomainType>(
-          (*it)->getDomain(), minIndex));
+    for (const auto &ls : levelSetsInOrder) {
+      iterators.emplace_back(ls->getDomain(), minIndex);
     }
 
     // move iterator for lowest material id and then adjust others if they are
@@ -569,11 +533,10 @@ public:
         }
 
         if (centerValue <= 0.) {
-          bool isVoxel;
+          bool isVoxel = true;
           // check if voxel is in bounds
-          for (unsigned i = 0; i < (1 << D); ++i) {
+          for (unsigned i = 0; i < (1 << D) && isVoxel; ++i) {
             hrleVectorType<hrleIndexType, D> index;
-            isVoxel = true;
             for (unsigned j = 0; j < D; ++j) {
               index[j] =
                   cellIt.getIndices(j) + cellIt.getCorner(i).getOffset()[j];
@@ -586,13 +549,8 @@ public:
 
           if (isVoxel) {
             if (matMapPtr) {
-              int index = materialId;
-              if (!cellSetAboveSurface)
-                --index;
-              int material = coverMaterial;
-              if (index >= 0 && index < matMapPtr->getNumberOfLayers())
-                material = matMapPtr->getMaterialId(index);
-              materialIds->at(cellIdx++) = material;
+              materialIds->at(cellIdx++) =
+                  indexToMaterial(materialId, matMapPtr);
             } else {
               materialIds->at(cellIdx++) = materialId;
             }
@@ -790,19 +748,42 @@ private:
     if (!materialMap)
       return;
 
-    auto numMaterials = materialMap->getNumberOfLayers();
-
 #pragma omp parallel for
     for (int i = 0; i < matIds->size(); i++) {
-      int materialId = static_cast<int>(matIds->at(i));
-      if (!cellSetAboveSurface)
-        materialId--;
-      if (materialId >= 0 && materialId < numMaterials) {
-        matIds->at(i) = materialMap->getMaterialId(materialId);
-      } else {
-        matIds->at(i) = coverMaterial;
-      }
+      matIds->at(i) =
+          indexToMaterial(static_cast<int>(matIds->at(i)), materialMap);
     }
+  }
+
+  int indexToMaterial(int index, const materialMapType &materialMap) {
+    // This takes into account the added coverMaterial layer
+    if (!cellSetAboveSurface)
+      --index;
+    if (index >= 0 && index < materialMap->getNumberOfLayers())
+      return materialMap->getMaterialId(index);
+    return coverMaterial;
+  }
+
+  auto getLevelSetsInOrder() {
+    std::vector<SmartPointer<viennals::Domain<T, D>>> levelSetsInOrder;
+    auto plane = SmartPointer<viennals::Domain<T, D>>::New(surface->getGrid());
+    {
+      T origin[D] = {0.};
+      T normal[D] = {0.};
+      origin[D - 1] = depth;
+      normal[D - 1] = 1.;
+      viennals::MakeGeometry<T, D>(
+          plane, SmartPointer<viennals::Plane<T, D>>::New(origin, normal))
+          .apply();
+    }
+    if (!cellSetAboveSurface)
+      levelSetsInOrder.push_back(plane);
+    for (const auto &ls : levelSets)
+      levelSetsInOrder.push_back(ls);
+    if (cellSetAboveSurface)
+      levelSetsInOrder.push_back(plane);
+
+    return levelSetsInOrder;
   }
 
   int findSurfaceHitPoint(Vec3D<T> &hitPoint, const Vec3D<T> &direction) {
