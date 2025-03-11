@@ -10,7 +10,7 @@ project(
 
 option(VIENNACS_BUILD_PYTHON "Build python bindings" OFF)
 
-option(VIENNACS_BUILD_EXAMPLES "Build examples" OFF)
+option(VIENNACS_BUILD_EXAMPLES "Build examples" ON)
 option(VIENNACS_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACS_LOOKUP_DIRS
@@ -73,25 +73,25 @@ include("cmake/cpm.cmake")
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 1.0.0
+  VERSION 1.3.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.11.2
+  VERSION 1.13.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
 CPMFindPackage(
   NAME ViennaRay
-  VERSION 3.0.0
+  VERSION 3.3.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaRay"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
 CPMFindPackage(
   NAME ViennaLS
-  VERSION 4.0.0
+  VERSION 4.2.2
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaLS"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
