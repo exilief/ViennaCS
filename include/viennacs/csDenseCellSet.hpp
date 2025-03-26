@@ -125,7 +125,7 @@ public:
         cellIt.goToIndicesSequential(iterators.front().getIndices());
 
         // find out whether the centre of the box is inside
-        T centerValue = 0.;
+        double centerValue = 0.;
         for (int i = 0; i < (1 << D); ++i) {
           centerValue += cellIt.getCorner(i).getValue();
         }
