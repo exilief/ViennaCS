@@ -4,7 +4,7 @@
 #include <rayUtil.hpp>
 
 #include <vcRNG.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennacs {
 

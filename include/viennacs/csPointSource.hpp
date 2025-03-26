@@ -2,7 +2,7 @@
 
 #include <raySource.hpp>
 
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennacs {
 
@@ -21,7 +21,7 @@ public:
       : origin(passedOrigin), direction(passedDirection),
         mNumPoints(pNumPoints) {}
 
-  Vec2D<Vec3D<NumericType>>
+  std::array<Vec3D<NumericType>, 2>
   getOriginAndDirection(const size_t idx, RNG &rngState) const override {
     return {origin, direction};
   }

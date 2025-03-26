@@ -12,7 +12,7 @@
 #include <raySourceRandom.hpp>
 
 #include <vcLogger.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennacs {
 
@@ -34,12 +34,12 @@ private:
              : viennaray::TraceDirection::POS_Z;
   bool mUseRandomSeeds = true;
   bool usePrimaryDirection = false;
-  Vec3D<T> primaryDirection = {0.};
+  Vec3D<T> primaryDirection{T(0)};
   size_t mRunNumber = 0;
   int excludeMaterialId = -1;
   bool usePointSource = false;
-  Vec3D<T> pointSourceOrigin = {0.};
-  Vec3D<T> pointSourceDirection = {0.};
+  Vec3D<T> pointSourceOrigin{T(0)};
+  Vec3D<T> pointSourceDirection{T(0)};
 
 public:
   Tracing() : mDevice(rtcNewDevice("hugepages=1")) {
