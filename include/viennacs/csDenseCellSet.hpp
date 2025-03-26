@@ -371,7 +371,7 @@ public:
   }
 
   // Sets the filling fraction for cell which contains given point.
-  bool setFillingFraction(const std::array<T, 3> &point, const T fill) {
+  bool setFillingFraction(const Vec3D<T> &point, const T fill) {
     auto idx = findIndex(point);
     return setFillingFraction(idx, fill);
   }
@@ -386,14 +386,14 @@ public:
   }
 
   // Add to the filling fraction for cell which contains given point.
-  bool addFillingFraction(const std::array<T, 3> &point, T fill) {
+  bool addFillingFraction(const Vec3D<T> &point, T fill) {
     auto idx = findIndex(point);
     return addFillingFraction(idx, fill);
   }
 
   // Add to the filling fraction for cell which contains given point only if the
   // cell has the specified material ID.
-  bool addFillingFractionInMaterial(const std::array<T, 3> &point, T fill,
+  bool addFillingFractionInMaterial(const Vec3D<T> &point, T fill,
                                     int materialId) {
     auto idx = findIndex(point);
     if (getScalarData("Material")->at(idx) == materialId)
