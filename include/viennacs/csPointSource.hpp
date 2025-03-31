@@ -8,7 +8,7 @@ namespace viennacs {
 
 using namespace viennacore;
 
-template <typename NumericType, int D>
+template <typename NumericType>
 class PointSource : public viennaray::Source<NumericType> {
   const unsigned mNumPoints;
   const Vec3D<NumericType> origin;

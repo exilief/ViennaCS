@@ -11,8 +11,7 @@ namespace viennacs {
 using namespace viennacore;
 
 template <class T, int D> class BoundingVolume {
-private:
-  using BVPtrType = SmartPointer<BoundingVolume<T, D>>;
+  using BVPtrType = SmartPointer<BoundingVolume>;
   using BoundsType = std::array<VectorType<T, D>, 2>;
   using CellIdsPtr = std::set<unsigned> *;
 
@@ -23,7 +22,7 @@ private:
   int layer = -1;
 
 public:
-  BoundingVolume() {}
+  BoundingVolume() = default;
   BoundingVolume(const BoundsType &outerBound, int thisLayer)
       : layer(thisLayer) {
 

@@ -19,7 +19,6 @@ namespace viennacs {
 using namespace viennacore;
 
 template <class T, int D> class Tracing {
-private:
   SmartPointer<DenseCellSet<T, D>> cellSet = nullptr;
   std::unique_ptr<AbstractParticle<T>> mParticle = nullptr;
 
@@ -44,7 +43,7 @@ private:
 public:
   Tracing() : mDevice(rtcNewDevice("hugepages=1")) {
     // TODO: currently only periodic boundary conditions are implemented in
-    // TracingKernel
+    // csTracingKernel
     for (int i = 0; i < D; i++)
       mBoundaryConditions[i] = viennaray::BoundaryCondition::PERIODIC;
   }
@@ -115,7 +114,7 @@ public:
 
   template <typename ParticleType>
   void setParticle(std::unique_ptr<ParticleType> &p) {
-    static_assert(std::is_base_of<AbstractParticle<T>, ParticleType>::value &&
+    static_assert(std::is_base_of_v<AbstractParticle<T>, ParticleType> &&
                   "Particle object does not interface correct class");
     mParticle = p->clone();
   }

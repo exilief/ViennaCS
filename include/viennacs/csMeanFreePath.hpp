@@ -5,7 +5,7 @@
 #include <lsDomain.hpp>
 #include <lsToDiskMesh.hpp>
 
-#include <rayGeometry.hpp>
+// #include <rayGeometry.hpp>
 #include <rayReflection.hpp>
 
 #include <vcKDTree.hpp>

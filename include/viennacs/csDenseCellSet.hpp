@@ -37,7 +37,7 @@ private:
 
   T gridDelta;
   T depth = 0.;
-  std::size_t numberOfCells;
+  size_t numberOfCells = 0;
   int BVHlayers = 0;
 
   std::vector<std::array<int, 2 * D>> cellNeighbors; // -x, x, -y, y, -z, z
@@ -51,7 +51,7 @@ private:
   const T eps = 1e-4;
 
 public:
-  DenseCellSet() {}
+  DenseCellSet() = default;
 
   DenseCellSet(levelSetsType passedLevelSets,
                materialMapType passedMaterialMap = nullptr, T passedDepth = 0.,
@@ -113,7 +113,6 @@ public:
 
     // move iterator for lowest material id and then adjust others if they are
     // needed
-    unsigned counter = 0;
     for (; iterators.front().getIndices() < maxIndex;
          iterators.front().next()) {
       // go over all materials
@@ -132,7 +131,7 @@ public:
 
         if (centerValue <= 0.) {
           std::array<unsigned, 1 << D> voxel;
-          bool addVoxel;
+          bool addVoxel = false;
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
             viennahrle::Index<D> index;
@@ -403,12 +402,12 @@ public:
   }
 
   // Write the cell set as .vtu file
-  void writeVTU(std::string fileName) {
+  void writeVTU(const std::string &fileName) {
     viennals::VTKWriter<T>(cellGrid, fileName).apply();
   }
 
   // Save cell set data in simple text format
-  void writeCellSetData(std::string fileName) const {
+  void writeCellSetData(const std::string &fileName) const {
     auto numScalarData = cellGrid->getCellData().getScalarDataSize();
 
     std::ofstream file(fileName);
@@ -430,7 +429,7 @@ public:
   }
 
   // Read cell set data from text
-  void readCellSetData(std::string fileName) {
+  void readCellSetData(const std::string &fileName) {
     std::ifstream file(fileName);
     std::string line;
 
@@ -458,15 +457,15 @@ public:
     }
 
     std::vector<std::vector<T> *> cellDataP;
-    for (int i = 0; i < labels.size(); i++) {
-      auto dataP = getScalarData(labels[i]);
+    for (auto & label : labels) {
+      auto dataP = getScalarData(label);
       if (dataP == nullptr) {
-        dataP = addScalarData(labels[i], 0.);
+        addScalarData(label, 0.);
       }
     }
 
-    for (int i = 0; i < labels.size(); i++) {
-      cellDataP.push_back(getScalarData(labels[i]));
+    for (auto & label : labels) {
+      cellDataP.push_back(getScalarData(label));
     }
 
     std::size_t j = 0;
@@ -591,7 +590,7 @@ public:
 
     auto numScalarData = cellGrid->getCellData().getScalarDataSize();
 
-    for (int elIdx = nCutCells - 1; elIdx >= 0; elIdx--) {
+    for (int elIdx = nCutCells - 1; elIdx >= 0; --elIdx) {
       if (cutMatIds->at(elIdx) == 2) {
         for (int i = 0; i < numScalarData; i++) {
           auto data = cellGrid->getCellData().getScalarData(i);
