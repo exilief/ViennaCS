@@ -8,8 +8,6 @@ project(
 # Library options
 # --------------------------------------------------------------------------------------------------------
 
-option(VIENNACS_USE_OPENMP "Use OpenMP for parallelization" OFF)
-
 option(VIENNACS_BUILD_PYTHON "Build python bindings" OFF)
 
 option(VIENNACS_BUILD_EXAMPLES "Build examples" OFF)
@@ -77,7 +75,6 @@ CPMAddPackage(
   NAME ViennaCore
   VERSION 1.3.1
   GIT_TAG vector-type
-  OPTIONS "VIENNACORE_USE_OPENMP ${VIENNACS_USE_OPENMP}"
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
 
@@ -91,7 +88,6 @@ CPMFindPackage(
   NAME ViennaRay
   VERSION 3.3.0
   GIT_TAG refactor-vector-type
-  OPTIONS "VIENNARAY_USE_OPENMP ${VIENNACS_USE_OPENMP}"
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaRay"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
@@ -99,7 +95,6 @@ CPMFindPackage(
   NAME ViennaLS
   VERSION 4.2.2
   GIT_TAG hrle-refactor
-  OPTIONS "VIENNALS_USE_OPENMP ${VIENNACS_USE_OPENMP}"
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaLS"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
