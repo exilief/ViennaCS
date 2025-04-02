@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCS
   LANGUAGES CXX
-  VERSION 1.0.0)
+  VERSION 1.1.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -73,8 +73,7 @@ include("cmake/cpm.cmake")
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 1.3.1
-  GIT_TAG vector-type
+  VERSION 1.4.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
 
@@ -86,15 +85,13 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaRay
-  VERSION 3.3.0
-  GIT_TAG refactor-vector-type
+  VERSION 3.4.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaRay"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 
 CPMFindPackage(
   NAME ViennaLS
-  VERSION 4.2.2
-  GIT_TAG hrle-refactor
+  VERSION 4.3.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaLS"
   EXCLUDE_FROM_ALL ${VIENNACS_BUILD_PYTHON})
 

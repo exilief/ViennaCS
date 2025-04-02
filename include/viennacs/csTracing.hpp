@@ -76,9 +76,8 @@ public:
     }
 
     if (usePointSource) {
-      auto raySource =
-          PointSource<T, D>(pointSourceOrigin, pointSourceDirection,
-                            traceSettings, mGeometry.getNumPoints());
+      auto raySource = PointSource<T>(pointSourceOrigin, pointSourceDirection,
+                                      traceSettings, mGeometry.getNumPoints());
 
       TracingKernel<T, D>(mDevice, mGeometry, boundary, raySource, mParticle,
                           mNumberOfRaysPerPoint, mNumberOfRaysFixed,
