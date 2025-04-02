@@ -12,14 +12,13 @@
 #include <raySourceRandom.hpp>
 
 #include <vcLogger.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennacs {
 
 using namespace viennacore;
 
 template <class T, int D> class Tracing {
-private:
   SmartPointer<DenseCellSet<T, D>> cellSet = nullptr;
   std::unique_ptr<AbstractParticle<T>> mParticle = nullptr;
 
@@ -34,17 +33,17 @@ private:
              : viennaray::TraceDirection::POS_Z;
   bool mUseRandomSeeds = true;
   bool usePrimaryDirection = false;
-  Vec3D<T> primaryDirection = {0.};
+  Vec3D<T> primaryDirection{T(0)};
   size_t mRunNumber = 0;
   int excludeMaterialId = -1;
   bool usePointSource = false;
-  Vec3D<T> pointSourceOrigin = {0.};
-  Vec3D<T> pointSourceDirection = {0.};
+  Vec3D<T> pointSourceOrigin{T(0)};
+  Vec3D<T> pointSourceDirection{T(0)};
 
 public:
   Tracing() : mDevice(rtcNewDevice("hugepages=1")) {
     // TODO: currently only periodic boundary conditions are implemented in
-    // TracingKernel
+    // csTracingKernel
     for (int i = 0; i < D; i++)
       mBoundaryConditions[i] = viennaray::BoundaryCondition::PERIODIC;
   }
@@ -77,9 +76,8 @@ public:
     }
 
     if (usePointSource) {
-      auto raySource =
-          PointSource<T, D>(pointSourceOrigin, pointSourceDirection,
-                            traceSettings, mGeometry.getNumPoints());
+      auto raySource = PointSource<T>(pointSourceOrigin, pointSourceDirection,
+                                      traceSettings, mGeometry.getNumPoints());
 
       TracingKernel<T, D>(mDevice, mGeometry, boundary, raySource, mParticle,
                           mNumberOfRaysPerPoint, mNumberOfRaysFixed,
@@ -115,7 +113,7 @@ public:
 
   template <typename ParticleType>
   void setParticle(std::unique_ptr<ParticleType> &p) {
-    static_assert(std::is_base_of<AbstractParticle<T>, ParticleType>::value &&
+    static_assert(std::is_base_of_v<AbstractParticle<T>, ParticleType> &&
                   "Particle object does not interface correct class");
     mParticle = p->clone();
   }

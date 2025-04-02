@@ -48,7 +48,7 @@ public:
     assert(rtcGetDeviceError(mDevice) == RTC_ERROR_NONE &&
            "Embree device error");
 
-    const Vec2D<T> meanFreePath = mParticle->getMeanFreePath();
+    const auto meanFreePath = mParticle->getMeanFreePath();
 
     auto myCellSet = cellSet;
 
@@ -170,7 +170,7 @@ public:
             std::vector<VolumeParticle<T>> particleStack;
             std::normal_distribution<T> normalDist{meanFreePath[0],
                                                    meanFreePath[1]};
-            Vec3D<T> hitPoint = {xx, yy, zz};
+            Vec3D<T> hitPoint{xx, yy, zz};
             particleStack.emplace_back(VolumeParticle<T>{
                 hitPoint, rayDir, fillnDirection.first, 0., -1, 0});
 
